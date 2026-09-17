@@ -24,10 +24,14 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "MileMark — onchain milestone escrow",
   description:
-    "Sponsors lock USDC against titled milestones on Arbitrum. A 1-of-n attestor set marks work complete. The beneficiary claims; the sponsor reclaims incomplete miles after the deadline.",
+    "Sponsors lock USDC against titled milestones on Arbitrum. An N-of-M attestor quorum marks work complete. After a challenge window the beneficiary claims; the sponsor reclaims incomplete or disputed miles after the deadline.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"

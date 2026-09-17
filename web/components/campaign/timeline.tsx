@@ -48,24 +48,33 @@ export function CampaignTimeline({
           args: { campaignId },
         } as const;
 
-        const [created, completed, claimed, reclaimed] = await Promise.all([
-          client!.getContractEvents({
-            ...common,
-            eventName: "CampaignCreated",
-          }),
-          client!.getContractEvents({
-            ...common,
-            eventName: "MilestoneCompleted",
-          }),
-          client!.getContractEvents({
-            ...common,
-            eventName: "Claimed",
-          }),
-          client!.getContractEvents({
-            ...common,
-            eventName: "Reclaimed",
-          }),
-        ]);
+        const [created, attested, completed, disputed, claimed, reclaimed] =
+          await Promise.all([
+            client!.getContractEvents({
+              ...common,
+              eventName: "CampaignCreated",
+            }),
+            client!.getContractEvents({
+              ...common,
+              eventName: "MilestoneAttested",
+            }),
+            client!.getContractEvents({
+              ...common,
+              eventName: "MilestoneCompleted",
+            }),
+            client!.getContractEvents({
+              ...common,
+              eventName: "MilestoneDisputed",
+            }),
+            client!.getContractEvents({
+              ...common,
+              eventName: "Claimed",
+            }),
+            client!.getContractEvents({
+              ...common,
+              eventName: "Reclaimed",
+            }),
+          ]);
 
         const next: Item[] = [];
 
@@ -76,7 +85,18 @@ export function CampaignTimeline({
             logIndex: log.logIndex ?? 0,
             txHash: log.transactionHash,
             title: "Campaign created",
-            detail: `${formatUsdc(log.args.totalAmount ?? 0n)} USDC locked`,
+            detail: `${formatUsdc(log.args.totalAmount ?? 0n)} USDC locked · quorum ${log.args.quorum ?? 0}`,
+          });
+        }
+        for (const log of attested) {
+          const ev = log.args.evidenceURI;
+          next.push({
+            key: `${log.transactionHash}-${log.logIndex}`,
+            blockNumber: log.blockNumber ?? 0n,
+            logIndex: log.logIndex ?? 0,
+            txHash: log.transactionHash,
+            title: `Milestone ${(log.args.index ?? 0n) + 1n} attested`,
+            detail: `${shortAddress(String(log.args.attestor ?? ""))} · ${log.args.attestationCount ?? 0}/${log.args.quorum ?? 0}${ev ? ` · ${ev}` : ""}`,
           });
         }
         for (const log of completed) {
@@ -86,8 +106,18 @@ export function CampaignTimeline({
             blockNumber: log.blockNumber ?? 0n,
             logIndex: log.logIndex ?? 0,
             txHash: log.transactionHash,
-            title: `Milestone ${(log.args.index ?? 0n) + 1n} completed`,
+            title: `Milestone ${(log.args.index ?? 0n) + 1n} completed (quorum)`,
             detail: `${shortAddress(String(log.args.attestor ?? ""))}${ev ? ` · ${ev}` : ""}`.trim(),
+          });
+        }
+        for (const log of disputed) {
+          next.push({
+            key: `${log.transactionHash}-${log.logIndex}`,
+            blockNumber: log.blockNumber ?? 0n,
+            logIndex: log.logIndex ?? 0,
+            txHash: log.transactionHash,
+            title: `Milestone ${(log.args.index ?? 0n) + 1n} disputed`,
+            detail: shortAddress(String(log.args.disputer ?? "")),
           });
         }
         for (const log of claimed) {

@@ -2,20 +2,27 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MAX_ATTESTORS } from "@/lib/milemark";
 
 export function PartyFields({
   beneficiary,
   attestors,
+  quorum,
   connectedAddress,
   onBeneficiary,
   onAttestors,
+  onQuorum,
 }: {
   beneficiary: string;
   attestors: string[];
+  quorum: number;
   connectedAddress?: `0x${string}`;
   onBeneficiary: (value: string) => void;
   onAttestors: (value: string[]) => void;
+  onQuorum: (value: number) => void;
 }) {
+  const uniqueCount = attestors.map((item) => item.trim()).filter(Boolean).length;
+
   return (
     <div className="grid gap-6">
       <div className="grid gap-2">
@@ -40,11 +47,12 @@ export function PartyFields({
 
       <div className="grid gap-3">
         <div className="flex items-center justify-between">
-          <Label>Attestors (1-of-n)</Label>
+          <Label>Attestors (N-of-M quorum)</Label>
           <Button
             type="button"
             variant="ghost"
             size="sm"
+            disabled={attestors.length >= MAX_ATTESTORS}
             onClick={() => onAttestors([...attestors, ""])}
           >
             <Plus /> Add
@@ -88,6 +96,22 @@ export function PartyFields({
             Set first attestor to my wallet
           </button>
         )}
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="quorum">Quorum</Label>
+        <Input
+          id="quorum"
+          type="number"
+          min={1}
+          max={Math.max(uniqueCount, 1)}
+          value={quorum}
+          onChange={(e) => onQuorum(Number(e.target.value))}
+        />
+        <p className="text-xs text-muted">
+          Milestone completes when {quorum} of {Math.max(uniqueCount, 1)} unique
+          attestors attest. 1-of-n matches v2 behaviour.
+        </p>
       </div>
     </div>
   );

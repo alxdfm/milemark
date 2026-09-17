@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { CampaignLookup } from "@/components/campaign-lookup";
 import { Button } from "@/components/ui/button";
-import { DEMO_CAMPAIGN_ID, LIVE_ESCROW_V2 } from "@/lib/contracts";
-import { explorerAddress } from "@/lib/chains";
+import { DEMO_CAMPAIGN_ID, isEscrowConfigured } from "@/lib/contracts";
+import { ESCROW_ADDRESS, explorerAddress } from "@/lib/chains";
 
-const escrowHref = explorerAddress(LIVE_ESCROW_V2);
+const escrowHref = isEscrowConfigured ? explorerAddress(ESCROW_ADDRESS) : undefined;
 
 export default function HomePage() {
   return (
@@ -12,24 +12,24 @@ export default function HomePage() {
       <section className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
         <div className="flex flex-col gap-6">
           <p className="font-mono text-xs uppercase tracking-[0.28em] text-accent">
-            Arbitrum Sepolia · live v2 escrow
+            Arbitrum Sepolia · live v3 escrow
           </p>
           <h1 className="font-display text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl">
             Lock USDC to the work.
             <span className="block text-muted">Release it by the mile.</span>
           </h1>
           <p className="max-w-xl text-base leading-7 text-muted sm:text-lg">
-            Sponsors fund a titled campaign. Any listed attestor can mark a
-            milestone complete — even out of order — with optional evidence. The
-            beneficiary claims released USDC. After the deadline, unfinished
-            miles return to the sponsor.
+            Sponsors fund a titled campaign. Listed attestors vote to a quorum.
+            After a short challenge window — or immediately if the window is 0 —
+            the beneficiary claims released USDC. Disputed or unfinished miles
+            return to the sponsor after the deadline.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
               <Link href="/create">Create a campaign</Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
-              <Link href={`/campaign/${DEMO_CAMPAIGN_ID}`}>Open live demo</Link>
+              <Link href="/demo">Judge demo kit</Link>
             </Button>
           </div>
         </div>
@@ -53,8 +53,8 @@ export default function HomePage() {
 
       <section className="grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
         <TrustItem kicker="Settlement" label="Circle testnet USDC" />
-        <TrustItem kicker="Attestation" label="1-of-n attestor set" />
-        <TrustItem kicker="Completion" label="Any-order miles" />
+        <TrustItem kicker="Attestation" label="N-of-M quorum" />
+        <TrustItem kicker="Challenge" label="Per-campaign window" />
         <TrustItem kicker="Safety" label="Deadline reclaim" />
       </section>
 
@@ -62,17 +62,17 @@ export default function HomePage() {
         <Step
           n="01"
           title="Sponsor locks"
-          body="Approve USDC, then createCampaign. The total of every milestone amount is pulled in the same flow and sits in the escrow."
+          body="Approve USDC, then createCampaign with attestors, quorum, and a challenge window. The total of every milestone amount is pulled in the same flow."
         />
         <Step
           n="02"
-          title="Attestor marks"
-          body="Any listed attestor can complete miles out of order, with an optional evidence URI. After the deadline, the sponsor reclaims unfinished ones."
+          title="Attestors vote"
+          body="Each listed attestor may attest a mile once. The mile completes when attestations hit quorum — any-order, evidence optional. During the window the sponsor or an attestor can dispute."
         />
         <Step
           n="03"
-          title="Beneficiary claims"
-          body="claim pays the sum of completed, unclaimed milestones. A second claim with nothing new reverts. No one else can withdraw."
+          title="Claim or reclaim"
+          body="After the window with no dispute, the beneficiary claims. After the deadline the sponsor reclaims incomplete or disputed miles. Completed undisputed amounts stay with the beneficiary."
         />
       </section>
 
@@ -84,8 +84,8 @@ export default function HomePage() {
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
               The UI reads getCampaign / getMilestones / getAttestors and builds
-              the activity timeline from escrow events. v2 ABI is live — do not
-              point this app at obsolete v1.
+              the activity timeline from escrow events. v3 ABI is live — do not
+              point this app at frozen v2 or obsolete v1.
             </p>
           </div>
           {escrowHref ? (
@@ -95,15 +95,15 @@ export default function HomePage() {
               rel="noreferrer"
               className="font-mono text-xs text-accent hover:underline"
             >
-              {LIVE_ESCROW_V2.slice(0, 6)}…{LIVE_ESCROW_V2.slice(-4)} on Arbiscan
+              {ESCROW_ADDRESS.slice(0, 6)}…{ESCROW_ADDRESS.slice(-4)} on Arbiscan
             </a>
           ) : null}
         </div>
         <ul className="mt-6 grid gap-2 text-sm text-muted sm:grid-cols-2">
           <li>USDC (6 decimals) via OpenZeppelin SafeERC20</li>
           <li>ReentrancyGuard on create, claim, and reclaim</li>
-          <li>Custom errors + CampaignCreated / MilestoneCompleted / Claimed / Reclaimed</li>
-          <li>No oracles, no DAO, no subgraph</li>
+          <li>N-of-M quorum + sticky light dispute during the window</li>
+          <li>No oracles, no DAO, no subgraph, no Stylus</li>
         </ul>
       </section>
     </main>

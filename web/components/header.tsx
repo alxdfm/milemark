@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ConnectWallet } from "@/components/connect-wallet";
-import { DEMO_CAMPAIGN_ID } from "@/lib/contracts";
 import { milemarkChain } from "@/lib/chains";
 
 function MileMarker({ className }: { className?: string }) {
@@ -44,7 +43,7 @@ export function Header() {
             Create
           </Link>
           <Link
-            href={`/campaign/${DEMO_CAMPAIGN_ID}`}
+            href="/demo"
             className="rounded-md px-3 py-2 text-sm text-muted hover:text-foreground"
           >
             Demo

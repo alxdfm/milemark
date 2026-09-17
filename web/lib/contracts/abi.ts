@@ -15,6 +15,66 @@ export const milestoneEscrowAbi = [
   },
   {
     "type": "function",
+    "name": "MAX_ATTESTORS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "attestMilestone",
+    "inputs": [
+      {
+        "name": "campaignId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "evidenceURI",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "attestedBy",
+    "inputs": [
+      {
+        "name": "campaignId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "list",
+        "type": "address[]",
+        "internalType": "address[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "campaignCount",
     "inputs": [],
     "outputs": [
@@ -51,6 +111,16 @@ export const milestoneEscrowAbi = [
         "name": "deadline",
         "type": "uint64",
         "internalType": "uint64"
+      },
+      {
+        "name": "challengeWindow",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "quorum",
+        "type": "uint8",
+        "internalType": "uint8"
       },
       {
         "name": "milestoneCount",
@@ -109,29 +179,6 @@ export const milestoneEscrowAbi = [
   },
   {
     "type": "function",
-    "name": "completeMilestone",
-    "inputs": [
-      {
-        "name": "campaignId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "index",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "evidenceURI",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "createCampaign",
     "inputs": [
       {
@@ -145,6 +192,11 @@ export const milestoneEscrowAbi = [
         "internalType": "address[]"
       },
       {
+        "name": "quorum",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
         "name": "title",
         "type": "string",
         "internalType": "string"
@@ -156,6 +208,11 @@ export const milestoneEscrowAbi = [
       },
       {
         "name": "deadline",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "challengeWindow",
         "type": "uint64",
         "internalType": "uint64"
       },
@@ -177,6 +234,24 @@ export const milestoneEscrowAbi = [
         "internalType": "uint256"
       }
     ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "dispute",
+    "inputs": [
+      {
+        "name": "campaignId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
     "stateMutability": "nonpayable"
   },
   {
@@ -240,6 +315,16 @@ export const milestoneEscrowAbi = [
             "internalType": "uint64"
           },
           {
+            "name": "challengeWindow",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "quorum",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
             "name": "milestoneCount",
             "type": "uint256",
             "internalType": "uint256"
@@ -296,6 +381,16 @@ export const milestoneEscrowAbi = [
             "internalType": "uint256"
           },
           {
+            "name": "completedAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "attestationCount",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
             "name": "completed",
             "type": "bool",
             "internalType": "bool"
@@ -309,8 +404,66 @@ export const milestoneEscrowAbi = [
             "name": "reclaimed",
             "type": "bool",
             "internalType": "bool"
+          },
+          {
+            "name": "disputed",
+            "type": "bool",
+            "internalType": "bool"
           }
         ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "hasAttested",
+    "inputs": [
+      {
+        "name": "campaignId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "hasAttestedAll",
+    "inputs": [
+      {
+        "name": "campaignId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "flags",
+        "type": "bool[]",
+        "internalType": "bool[]"
       }
     ],
     "stateMutability": "view"
@@ -371,6 +524,16 @@ export const milestoneEscrowAbi = [
         "internalType": "uint256"
       },
       {
+        "name": "completedAt",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "attestationCount",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
         "name": "completed",
         "type": "bool",
         "internalType": "bool"
@@ -382,6 +545,11 @@ export const milestoneEscrowAbi = [
       },
       {
         "name": "reclaimed",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "disputed",
         "type": "bool",
         "internalType": "bool"
       }
@@ -466,6 +634,18 @@ export const milestoneEscrowAbi = [
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"
+      },
+      {
+        "name": "quorum",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "challengeWindow",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
       }
     ],
     "anonymous": false
@@ -491,6 +671,49 @@ export const milestoneEscrowAbi = [
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MilestoneAttested",
+    "inputs": [
+      {
+        "name": "campaignId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "attestor",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "evidenceURI",
+        "type": "string",
+        "indexed": false,
+        "internalType": "string"
+      },
+      {
+        "name": "attestationCount",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      },
+      {
+        "name": "quorum",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
       }
     ],
     "anonymous": false
@@ -528,6 +751,31 @@ export const milestoneEscrowAbi = [
   },
   {
     "type": "event",
+    "name": "MilestoneDisputed",
+    "inputs": [
+      {
+        "name": "campaignId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "disputer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Reclaimed",
     "inputs": [
       {
@@ -553,7 +801,17 @@ export const milestoneEscrowAbi = [
   },
   {
     "type": "error",
+    "name": "AlreadyAttested",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "AlreadyCompleted",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AlreadyDisputed",
     "inputs": []
   },
   {
@@ -564,6 +822,11 @@ export const milestoneEscrowAbi = [
   {
     "type": "error",
     "name": "CampaignNotFound",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ChallengeWindowClosed",
     "inputs": []
   },
   {
@@ -593,6 +856,11 @@ export const milestoneEscrowAbi = [
   },
   {
     "type": "error",
+    "name": "InvalidQuorum",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "LengthMismatch",
     "inputs": []
   },
@@ -604,6 +872,16 @@ export const milestoneEscrowAbi = [
   {
     "type": "error",
     "name": "NotBeneficiary",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotCompleted",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotDisputer",
     "inputs": []
   },
   {
@@ -636,6 +914,11 @@ export const milestoneEscrowAbi = [
         "internalType": "address"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "TooManyAttestors",
+    "inputs": []
   },
   {
     "type": "error",

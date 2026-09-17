@@ -3,12 +3,16 @@ import { parseUsdc } from "./usdc";
 
 export type MilestoneDraft = { description: string; amount: string };
 
+export const MAX_ATTESTORS = 32;
+
 export type CreateCampaignDraft = {
   title: string;
   briefURI: string;
   deadlineLocal: string;
   beneficiary: string;
   attestors: string[];
+  quorum: number;
+  challengeWindowSec: number;
   rows: MilestoneDraft[];
   escrowConfigured: boolean;
   nowSec?: number;
@@ -17,9 +21,11 @@ export type CreateCampaignDraft = {
 export type ValidCreateCampaign = {
   beneficiary: Address;
   attestors: Address[];
+  quorum: number;
   title: string;
   briefURI: string;
   deadlineSec: number;
+  challengeWindowSec: number;
   descriptions: string[];
   amounts: bigint[];
   total: bigint;
@@ -88,6 +94,26 @@ export function validateCreateCampaign(draft: CreateCampaignDraft): CreateValida
     }
   }
 
+  if (attestors.length > MAX_ATTESTORS) {
+    return { ok: false, error: `At most ${MAX_ATTESTORS} unique attestors.` };
+  }
+
+  const quorum = draft.quorum;
+  if (!Number.isInteger(quorum) || quorum < 1) {
+    return { ok: false, error: "Quorum must be an integer ≥ 1." };
+  }
+  if (quorum > attestors.length) {
+    return {
+      ok: false,
+      error: `Quorum (${quorum}) cannot exceed unique attestors (${attestors.length}).`,
+    };
+  }
+
+  const window = draft.challengeWindowSec;
+  if (!Number.isFinite(window) || window < 0 || !Number.isInteger(window)) {
+    return { ok: false, error: "Challenge window must be an integer ≥ 0 seconds." };
+  }
+
   if (draft.rows.length === 0) {
     return { ok: false, error: "Add at least one milestone." };
   }
@@ -107,9 +133,11 @@ export function validateCreateCampaign(draft: CreateCampaignDraft): CreateValida
     value: {
       beneficiary,
       attestors,
+      quorum,
       title,
       briefURI: draft.briefURI.trim(),
       deadlineSec,
+      challengeWindowSec: window,
       descriptions,
       amounts,
       total,

@@ -1,4 +1,4 @@
-/** Copy for disabled claim / reclaim — domain, not React. */
+/** Copy for disabled claim / reclaim / dispute — domain, not React. */
 
 export function claimReason(input: {
   connected: boolean;
@@ -8,7 +8,7 @@ export function claimReason(input: {
   if (!input.connected) return "Connect the beneficiary wallet to claim.";
   if (!input.isBeneficiary) return "Only the beneficiary can claim.";
   if (input.claimable === 0n) {
-    return "Nothing to claim yet — wait for an attestor to mark a mile complete.";
+    return "Nothing to claim yet — wait for quorum, then the challenge window (undisputed).";
   }
   return null;
 }
@@ -26,7 +26,25 @@ export function reclaimReason(input: {
     const now = input.nowMs ?? Date.now();
     return Number(input.deadline) * 1000 > now
       ? "Deadline has not passed yet (or nothing is reclaimable)."
-      : "Nothing left to reclaim on incomplete milestones.";
+      : "Nothing left to reclaim on incomplete or disputed milestones.";
   }
+  return null;
+}
+
+export function disputeReason(input: {
+  connected: boolean;
+  isSponsor: boolean;
+  isAttestor: boolean;
+  completed: boolean;
+  disputed: boolean;
+  windowOpen: boolean;
+}): string | null {
+  if (!input.connected) return "Connect the sponsor or an attestor wallet to dispute.";
+  if (!input.isSponsor && !input.isAttestor) {
+    return "Only the sponsor or a listed attestor can dispute.";
+  }
+  if (!input.completed) return "Milestone has not reached quorum yet.";
+  if (input.disputed) return "Already disputed.";
+  if (!input.windowOpen) return "Challenge window has closed.";
   return null;
 }

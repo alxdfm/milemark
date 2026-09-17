@@ -1,5 +1,11 @@
 import { explorerAddress } from "@/lib/chains";
-import { formatUsdc, shortAddress, type CampaignView, type CampaignTotals } from "@/lib/milemark";
+import {
+  formatUsdc,
+  formatWindow,
+  shortAddress,
+  type CampaignView,
+  type CampaignTotals,
+} from "@/lib/milemark";
 import { linkLabel, publicHref } from "@/lib/links";
 import {
   Card,
@@ -30,6 +36,7 @@ export function CampaignHeaderCard({
 }) {
   const sponsorExplorer = explorerAddress(view.sponsor);
   const briefHref = publicHref(view.briefURI);
+  const windowSec = Number(view.challengeWindow);
 
   return (
     <Card>
@@ -40,7 +47,8 @@ export function CampaignHeaderCard({
         <CardTitle className="mt-1">{view.title}</CardTitle>
         <CardDescription className="mt-2">
           {Number(view.milestoneCount)} milestones · {formatUsdc(totals.total)}{" "}
-          USDC locked
+          USDC locked · quorum {view.quorum}-of-{attestors.length} · challenge{" "}
+          {formatWindow(windowSec)}
           {view.briefURI ? (
             <>
               {" · "}
@@ -98,7 +106,9 @@ export function CampaignHeaderCard({
           <span className="font-mono">{shortAddress(view.beneficiary)}</span>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-muted">Attestors ({attestors.length})</span>
+          <span className="text-muted">
+            Attestors ({attestors.length}) · quorum {view.quorum}
+          </span>
           {attestors.map((account) => (
             <span key={account} className="font-mono text-xs">
               {shortAddress(account)}
