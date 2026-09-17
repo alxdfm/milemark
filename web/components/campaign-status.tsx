@@ -437,6 +437,7 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
                   campaignId={id}
                   index={i}
                   disabled={!isAttestor || m.completed || m.reclaimed}
+                  showAttestorHint={!isAttestor && !m.completed && !m.reclaimed}
                   onSettled={refetch}
                 />
               </div>

@@ -23,19 +23,6 @@ export function shortAddress(address: string | null | undefined): string {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-export function externalHref(uri: string): string | null {
-  const value = uri.trim();
-  if (!value) return null;
-  if (value.startsWith("ipfs://")) {
-    return `https://ipfs.io/ipfs/${value.slice("ipfs://".length)}`;
-  }
-  if (value.startsWith("ipns://")) {
-    return `https://ipfs.io/ipns/${value.slice("ipns://".length)}`;
-  }
-  if (value.startsWith("https://") || value.startsWith("http://")) return value;
-  return null;
-}
-
 export function formatCountdown(
   deadlineSec: bigint | number | null | undefined,
   nowSec: number,

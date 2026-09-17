@@ -17,6 +17,11 @@ import {
   isEscrowConfigured,
 } from "@/lib/chains";
 import { friendlyError, formatUsdc } from "@/lib/format";
+import {
+  CAMPAIGN_TEMPLATES,
+  deadlineDaysFromNow,
+  type MilestoneDraft,
+} from "@/lib/templates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,65 +34,19 @@ import {
 } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
 
-type Row = { description: string; amount: string };
-
-const emptyRow = (): Row => ({ description: "", amount: "" });
-
-const TEMPLATES = [
-  {
-    id: "hackathon",
-    label: "Hackathon prize",
-    title: "Hackathon prize",
-    briefURI: "https://example.com/brief",
-    days: 21,
-    rows: [
-      { description: "Ship public demo", amount: "40" },
-      { description: "Pass review", amount: "30" },
-      { description: "Handoff + docs", amount: "30" },
-    ],
-  },
-  {
-    id: "retainer",
-    label: "Retainer biweekly",
-    title: "Biweekly retainer",
-    briefURI: "",
-    days: 30,
-    rows: [
-      { description: "Sprint A delivery", amount: "50" },
-      { description: "Sprint B delivery", amount: "50" },
-    ],
-  },
-  {
-    id: "grant",
-    label: "Grant AF-style",
-    title: "Milestone grant",
-    briefURI: "https://example.com/grant",
-    days: 60,
-    rows: [
-      { description: "MVP on testnet", amount: "25" },
-      { description: "Audit notes addressed", amount: "35" },
-      { description: "Mainnet / handoff", amount: "40" },
-    ],
-  },
-] as const;
+const emptyRow = (): MilestoneDraft => ({ description: "", amount: "" });
 
 export function CreateCampaignForm() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
   const [title, setTitle] = useState("MileMark campaign");
   const [briefURI, setBriefURI] = useState("");
-  const [deadlineLocal, setDeadlineLocal] = useState(() => {
-    const d = new Date(Date.now() + 14 * 86400_000);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  });
+  const [deadlineLocal, setDeadlineLocal] = useState(() => deadlineDaysFromNow(14));
   const [beneficiary, setBeneficiary] = useState("");
   const [attestors, setAttestors] = useState<string[]>([""]);
-  const [rows, setRows] = useState<Row[]>([
-    { description: "Ship public demo", amount: "40" },
-    { description: "Pass review", amount: "30" },
-    { description: "Handoff + docs", amount: "30" },
-  ]);
+  const [rows, setRows] = useState<MilestoneDraft[]>(() =>
+    CAMPAIGN_TEMPLATES[0].rows.map((r) => ({ ...r })),
+  );
   const [localError, setLocalError] = useState<string | null>(null);
   const [action, setAction] = useState<"approve" | "create" | null>(null);
 
@@ -157,14 +116,12 @@ export function CreateCampaignForm() {
   }, [receipt.isSuccess, receipt.data, hash, action, refetchAllowance, router]);
 
   function applyTemplate(id: string) {
-    const t = TEMPLATES.find((x) => x.id === id);
+    const t = CAMPAIGN_TEMPLATES.find((x) => x.id === id);
     if (!t) return;
     setTitle(t.title);
     setBriefURI(t.briefURI);
     setRows(t.rows.map((r) => ({ ...r })));
-    const d = new Date(Date.now() + t.days * 86400_000);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    setDeadlineLocal(d.toISOString().slice(0, 16));
+    setDeadlineLocal(deadlineDaysFromNow(t.days));
   }
 
   function validate(): {
@@ -260,7 +217,7 @@ export function CreateCampaignForm() {
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <div className="flex flex-wrap gap-2">
-          {TEMPLATES.map((t) => (
+          {CAMPAIGN_TEMPLATES.map((t) => (
             <Button
               key={t.id}
               type="button"

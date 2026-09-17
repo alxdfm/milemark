@@ -9,41 +9,41 @@ export type CampaignTemplate = {
   rows: MilestoneDraft[];
 };
 
+/** Testnet-friendly amounts used by the create form. */
 export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
   {
     id: "hackathon",
-    label: "Hackathon prize (3 miles)",
+    label: "Hackathon prize",
     title: "Hackathon prize",
-    briefURI: "https://example.com/prize-brief",
+    briefURI: "https://example.com/brief",
     days: 21,
     rows: [
-      { description: "Ship public demo", amount: "200" },
-      { description: "Judging walkthrough", amount: "200" },
-      { description: "Write-up and repo polish", amount: "100" },
+      { description: "Ship public demo", amount: "40" },
+      { description: "Pass review", amount: "30" },
+      { description: "Handoff + docs", amount: "30" },
     ],
   },
   {
     id: "retainer",
     label: "Retainer biweekly",
-    title: "Engineering retainer",
+    title: "Biweekly retainer",
     briefURI: "",
-    days: 42,
+    days: 30,
     rows: [
-      { description: "Sprint 1 (weeks 1–2)", amount: "500" },
-      { description: "Sprint 2 (weeks 3–4)", amount: "500" },
-      { description: "Sprint 3 (weeks 5–6)", amount: "500" },
+      { description: "Sprint A delivery", amount: "50" },
+      { description: "Sprint B delivery", amount: "50" },
     ],
   },
   {
     id: "grant",
     label: "Grant AF-style",
-    title: "Public goods grant",
-    briefURI: "ipfs://bafybrief",
-    days: 90,
+    title: "Milestone grant",
+    briefURI: "https://example.com/grant",
+    days: 60,
     rows: [
-      { description: "Research and spec", amount: "1000" },
-      { description: "Working prototype", amount: "2000" },
-      { description: "Delivery, docs, and handoff", amount: "2000" },
+      { description: "MVP on testnet", amount: "25" },
+      { description: "Audit notes addressed", amount: "35" },
+      { description: "Mainnet / handoff", amount: "40" },
     ],
   },
 ];

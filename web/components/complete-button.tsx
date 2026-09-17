@@ -12,11 +12,14 @@ export function CompleteButton({
   campaignId,
   index,
   disabled,
+  showAttestorHint,
   onSettled,
 }: {
   campaignId: bigint;
   index: number;
   disabled?: boolean;
+  /** Open mile, wallet missing or not a listed attestor. */
+  showAttestorHint?: boolean;
   onSettled?: () => void;
 }) {
   const [evidenceURI, setEvidenceURI] = useState("");
@@ -55,7 +58,7 @@ export function CompleteButton({
       >
         {waiting ? "Confirm…" : "Mark complete"}
       </Button>
-      {disabled && (
+      {showAttestorHint && (
         <p className="text-xs text-muted">
           Connect a listed attestor wallet to mark complete.
         </p>
