@@ -13,7 +13,7 @@ export const LIVE_ESCROW_V2 =
 export const LIVE_ESCROW_V3 =
   "0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC" as const satisfies Address;
 
-/** v3 deploy tx on Arbitrum Sepolia. */
+/** v3 deploy tx on Arbitrum Sepolia (block 309949272). */
 export const LIVE_ESCROW_V3_DEPLOY_TX =
   "0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464" as const;
 
@@ -25,7 +25,11 @@ export const OBSOLETE_ESCROW_V1 =
 export const CIRCLE_USDC_ARB_SEPOLIA =
   "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d" as const satisfies Address;
 
-/** Featured live demo campaign on the v3 escrow (set after CreateDemo). */
+/**
+ * Featured live demo campaign on the v3 escrow.
+ * Id 0 is a hand-crafted 1-of-1 (not CreateDemo.s.sol defaults). Create tx
+ * 0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4 at block 309949346.
+ */
 export const DEMO_CAMPAIGN_ID = (
   process.env.NEXT_PUBLIC_DEMO_CAMPAIGN_ID ?? "0"
 ).trim();
@@ -48,7 +52,11 @@ export const USDC_ADDRESS = readAddress(
   CIRCLE_USDC_ARB_SEPOLIA,
 );
 
-/** Start of getLogs range. Arb Sepolia RPCs reject fromBlock 0. */
+/**
+ * Start of getLogs range. Arb Sepolia RPCs reject fromBlock 0.
+ * Safe start 309949200 sits before v3 deploy (309949272) and campaign 0
+ * (309949346). Do not default to 309949351 — that misses CampaignCreated.
+ */
 export const ESCROW_FROM_BLOCK = BigInt(
   process.env.NEXT_PUBLIC_ESCROW_FROM_BLOCK ?? "309949200",
 );
