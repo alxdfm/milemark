@@ -14,9 +14,10 @@ export default function CreatePage() {
         Fund work by the mile
       </h1>
       <p className="mt-2 mb-8 max-w-2xl text-sm leading-6 text-muted">
-        Lock USDC against clear deliverables. Any listed attestor can mark miles
-        done (even out of order). After the deadline, you can reclaim what was
-        never completed.
+        Lock USDC against clear deliverables. Listed attestors vote to a quorum
+        (any-order). After the challenge window — or immediately if it is 0 — the
+        beneficiary claims. After the deadline you reclaim incomplete or disputed
+        miles.
       </p>
       <CreateCampaignForm />
     </main>

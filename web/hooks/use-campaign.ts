@@ -13,6 +13,7 @@ import {
   parseAttestors,
   parseCampaignId,
   parseCampaignView,
+  parseFlags,
   parseMilestones,
   resolveRoles,
   type CampaignRoles,
@@ -37,6 +38,7 @@ export type UseCampaignResult = {
   view: CampaignView | null;
   milestones: Milestone[];
   attestors: readonly `0x${string}`[];
+  attestedFlags: readonly boolean[];
   roles: CampaignRoles;
   totals: CampaignTotals;
   refreshKey: number;
@@ -75,15 +77,29 @@ export function useCampaign(campaignId: string): UseCampaignResult {
     query: { enabled: id !== null && isEscrowConfigured, retry: 1 },
   });
 
+  const attestedQuery = useReadContract({
+    address: ESCROW_ADDRESS,
+    abi: milestoneEscrowAbi,
+    functionName: "hasAttestedAll",
+    args: id !== null && address ? [id, address] : undefined,
+    chainId: milemarkChain.id,
+    query: {
+      enabled: id !== null && isEscrowConfigured && Boolean(address),
+      retry: 1,
+    },
+  });
+
   const refetchCampaign = campaign.refetch;
   const refetchMilestones = milestonesQuery.refetch;
   const refetchAttestors = attestorsQuery.refetch;
+  const refetchAttested = attestedQuery.refetch;
   const refetch = useCallback(() => {
     void refetchCampaign();
     void refetchMilestones();
     void refetchAttestors();
+    void refetchAttested();
     setRefreshKey((key) => key + 1);
-  }, [refetchCampaign, refetchMilestones, refetchAttestors]);
+  }, [refetchCampaign, refetchMilestones, refetchAttestors, refetchAttested]);
 
   const view = useMemo(
     () => parseCampaignView(campaign.data),
@@ -96,6 +112,10 @@ export function useCampaign(campaignId: string): UseCampaignResult {
   const attestors = useMemo(
     () => parseAttestors(attestorsQuery.data),
     [attestorsQuery.data],
+  );
+  const attestedFlags = useMemo(
+    () => parseFlags(attestedQuery.data),
+    [attestedQuery.data],
   );
 
   const roles = useMemo(
@@ -134,6 +154,7 @@ export function useCampaign(campaignId: string): UseCampaignResult {
     view,
     milestones,
     attestors,
+    attestedFlags,
     roles,
     totals,
     refreshKey,

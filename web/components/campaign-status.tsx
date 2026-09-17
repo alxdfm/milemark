@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCampaign } from "@/hooks/use-campaign";
 import { CampaignLookup } from "@/components/campaign-lookup";
@@ -16,8 +17,18 @@ import { ClaimCard } from "./campaign/claim-card";
 import { ReclaimCard } from "./campaign/reclaim-card";
 import { CampaignTimeline } from "./campaign/timeline";
 
+function useNowSec(intervalMs = 1000) {
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  useEffect(() => {
+    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
+
 export function CampaignStatus({ campaignId }: { campaignId: string }) {
   const campaign = useCampaign(campaignId);
+  const nowSec = useNowSec(1000);
 
   if (campaign.status === "unconfigured") {
     return (
@@ -25,8 +36,8 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
         <CardHeader>
           <CardTitle>Escrow not configured</CardTitle>
           <CardDescription>
-            Set NEXT_PUBLIC_ESCROW_ADDRESS after deploying MilestoneEscrow. Do
-            not point the UI at obsolete v1.
+            Set NEXT_PUBLIC_ESCROW_ADDRESS after deploying MilestoneEscrow v3. Do
+            not point the UI at frozen v2 or obsolete v1.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -101,7 +112,8 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     );
   }
 
-  const { view, id, milestones, attestors, roles, totals, refetch } = campaign;
+  const { view, id, milestones, attestors, attestedFlags, roles, totals, refetch } =
+    campaign;
 
   return (
     <div className="flex flex-col gap-6">
@@ -117,7 +129,12 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
       <MilestoneList
         campaignId={id}
         milestones={milestones}
+        quorum={view.quorum}
+        challengeWindow={view.challengeWindow}
+        nowSec={nowSec}
         isAttestor={roles.isAttestor}
+        isSponsor={roles.isSponsor}
+        attestedFlags={attestedFlags}
         onSettled={refetch}
       />
       <ClaimCard

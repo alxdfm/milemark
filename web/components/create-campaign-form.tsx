@@ -33,13 +33,22 @@ import { FundActions } from "./create/fund-actions";
 export function CreateCampaignForm() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
-  const [title, setTitle] = useState("MileMark campaign");
-  const [briefURI, setBriefURI] = useState("");
-  const [deadlineLocal, setDeadlineLocal] = useState(() => deadlineDaysFromNow(14));
+  const initial = CAMPAIGN_TEMPLATES[0];
+  const [title, setTitle] = useState(initial.title);
+  const [briefURI, setBriefURI] = useState(initial.briefURI);
+  const [deadlineLocal, setDeadlineLocal] = useState(() =>
+    deadlineDaysFromNow(initial.days),
+  );
   const [beneficiary, setBeneficiary] = useState("");
-  const [attestors, setAttestors] = useState<string[]>([""]);
+  const [attestors, setAttestors] = useState<string[]>(() =>
+    Array.from({ length: initial.attestorSlots }, () => ""),
+  );
+  const [quorum, setQuorum] = useState(initial.quorum);
+  const [challengeWindowSec, setChallengeWindowSec] = useState(
+    initial.challengeWindowSec,
+  );
   const [rows, setRows] = useState<MilestoneDraft[]>(() =>
-    CAMPAIGN_TEMPLATES[0].rows.map((row) => ({ ...row })),
+    initial.rows.map((row) => ({ ...row })),
   );
   const [localError, setLocalError] = useState<string | null>(null);
   const [action, setAction] = useState<"approve" | "create" | null>(null);
@@ -103,6 +112,9 @@ export function CreateCampaignForm() {
     setBriefURI(template.briefURI);
     setRows(template.rows.map((row) => ({ ...row })));
     setDeadlineLocal(deadlineDaysFromNow(template.days));
+    setQuorum(template.quorum);
+    setChallengeWindowSec(template.challengeWindowSec);
+    setAttestors(Array.from({ length: template.attestorSlots }, () => ""));
   }
 
   function validated() {
@@ -114,6 +126,8 @@ export function CreateCampaignForm() {
       deadlineLocal,
       beneficiary,
       attestors,
+      quorum,
+      challengeWindowSec,
       rows,
       escrowConfigured: isEscrowConfigured,
     });
@@ -154,9 +168,11 @@ export function CreateCampaignForm() {
       args: [
         ok.beneficiary,
         ok.attestors,
+        ok.quorum,
         ok.title,
         ok.briefURI,
         BigInt(ok.deadlineSec),
+        BigInt(ok.challengeWindowSec),
         ok.descriptions,
         ok.amounts,
       ],
@@ -168,7 +184,8 @@ export function CreateCampaignForm() {
       <CardHeader>
         <CardTitle>Lock a campaign</CardTitle>
         <CardDescription>
-          v2: title, brief, deadline, 1-of-n attestors. Approve USDC then create.
+          v3: N-of-M attestor quorum and a per-campaign challenge window. Approve
+          USDC then create.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
@@ -184,17 +201,21 @@ export function CreateCampaignForm() {
           title={title}
           briefURI={briefURI}
           deadlineLocal={deadlineLocal}
+          challengeWindowSec={challengeWindowSec}
           onTitle={setTitle}
           onBrief={setBriefURI}
           onDeadline={setDeadlineLocal}
+          onChallengeWindow={setChallengeWindowSec}
         />
 
         <PartyFields
           beneficiary={beneficiary}
           attestors={attestors}
+          quorum={quorum}
           connectedAddress={address}
           onBeneficiary={setBeneficiary}
           onAttestors={setAttestors}
+          onQuorum={setQuorum}
         />
 
         <MilestoneFields rows={rows} onRows={setRows} />

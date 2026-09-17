@@ -25,6 +25,16 @@ export function toBigInt(value: unknown): bigint | undefined {
   return undefined;
 }
 
+export function toNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "string" && value !== "") {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+  return fallback;
+}
+
 function asRecord(raw: unknown): (Record<string, unknown> & unknown[]) | null {
   if (!raw || typeof raw !== "object") return null;
   return raw as Record<string, unknown> & unknown[];
@@ -47,10 +57,12 @@ export function parseCampaignView(raw: unknown): CampaignView | null {
     title: String(r.title ?? r[2] ?? "Campaign"),
     briefURI: String(r.briefURI ?? r[3] ?? ""),
     deadline: toBigInt(r.deadline ?? r[4]) ?? 0n,
-    milestoneCount: toBigInt(r.milestoneCount ?? r[5]) ?? 0n,
-    createdAt: toBigInt(r.createdAt ?? r[6]) ?? 0n,
-    claimable: toBigInt(r.claimable ?? r[7]) ?? 0n,
-    reclaimable: toBigInt(r.reclaimable ?? r[8]) ?? 0n,
+    challengeWindow: toBigInt(r.challengeWindow ?? r[5]) ?? 0n,
+    quorum: toNumber(r.quorum ?? r[6], 1),
+    milestoneCount: toBigInt(r.milestoneCount ?? r[7]) ?? 0n,
+    createdAt: toBigInt(r.createdAt ?? r[8]) ?? 0n,
+    claimable: toBigInt(r.claimable ?? r[9]) ?? 0n,
+    reclaimable: toBigInt(r.reclaimable ?? r[10]) ?? 0n,
   };
 }
 
@@ -60,11 +72,24 @@ function asMilestone(raw: unknown): Milestone | null {
   const description = (r.description ?? r[0]) as string | undefined;
   const evidenceURI = String(r.evidenceURI ?? r[1] ?? "");
   const amount = toBigInt(r.amount ?? r[2]);
-  const completed = Boolean(r.completed ?? r[3]);
-  const claimed = Boolean(r.claimed ?? r[4]);
-  const reclaimed = Boolean(r.reclaimed ?? r[5]);
+  const completedAt = toBigInt(r.completedAt ?? r[3]) ?? 0n;
+  const attestationCount = toNumber(r.attestationCount ?? r[4], 0);
+  const completed = Boolean(r.completed ?? r[5]);
+  const claimed = Boolean(r.claimed ?? r[6]);
+  const reclaimed = Boolean(r.reclaimed ?? r[7]);
+  const disputed = Boolean(r.disputed ?? r[8]);
   if (description === undefined || amount === undefined) return null;
-  return { description, evidenceURI, amount, completed, claimed, reclaimed };
+  return {
+    description,
+    evidenceURI,
+    amount,
+    completedAt,
+    attestationCount,
+    completed,
+    claimed,
+    reclaimed,
+    disputed,
+  };
 }
 
 export function parseMilestones(raw: unknown): Milestone[] {
@@ -82,4 +107,9 @@ export function parseAttestors(raw: unknown): Address[] {
   return raw.filter(
     (item): item is Address => typeof item === "string" && isHexAddress(item),
   );
+}
+
+export function parseFlags(raw: unknown): boolean[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item) => Boolean(item));
 }

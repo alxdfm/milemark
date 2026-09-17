@@ -35,7 +35,8 @@ export function ReclaimCard({
         <CardTitle>Reclaim</CardTitle>
         <CardDescription>
           After the deadline, the sponsor reclaims USDC still locked in incomplete
-          milestones. Completed-but-unclaimed amounts stay for the beneficiary.
+          or disputed milestones. Completed, undisputed, unclaimed amounts stay
+          for the beneficiary (after the challenge window).
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">

@@ -20,12 +20,15 @@ export {
   parseAttestors,
   parseCampaignId,
   parseCampaignView,
+  parseFlags,
   parseMilestones,
   toBigInt,
+  toNumber,
 } from "./parse";
 export { resolveRoles, type CampaignRoles } from "./roles";
-export { claimReason, reclaimReason } from "./reasons";
+export { claimReason, disputeReason, reclaimReason } from "./reasons";
 export {
+  MAX_ATTESTORS,
   parseDeadlineSec,
   parseMilestoneRows,
   validateCreateCampaign,
@@ -34,4 +37,11 @@ export {
   type MilestoneDraft,
   type ValidCreateCampaign,
 } from "./create";
+export {
+  canDispute,
+  challengeEndsAt,
+  formatWindow,
+  isChallengeOpen,
+  isMileClaimable,
+} from "./lifecycle";
 export { extractErrorMessage, friendlyError } from "./errors";
