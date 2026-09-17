@@ -43,14 +43,17 @@ No indexer. The UI reads `getCampaign` / `getMilestones` directly.
 | Arbitrum Sepolia | Circle testnet USDC `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` ([Circle docs](https://developers.circle.com/stablecoins/usdc-on-test-networks)) |
 | Anvil / unit tests | `MockERC20` (6 decimals, public `mint`) |
 
-## Deployed address (TODO)
+## Deployed address
 
 | Item | Value |
 |---|---|
 | Network | Arbitrum Sepolia (421614) |
-| MilestoneEscrow | **TODO — not deployed yet** |
+| MilestoneEscrow | [`0x72b474DB34268281CD10db655cc1517C33973049`](https://sepolia.arbiscan.io/address/0x72b474DB34268281CD10db655cc1517C33973049) |
+| USDC (Circle testnet) | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
+| Deployer | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4` |
+| Deploy tx | [`0xd1ecf3062cf3ab3bf34cbaf7429ceb214a7c75416d3289709864c950cf548057`](https://sepolia.arbiscan.io/tx/0xd1ecf3062cf3ab3bf34cbaf7429ceb214a7c75416d3289709864c950cf548057) |
+| Explorer | https://sepolia.arbiscan.io/address/0x72b474DB34268281CD10db655cc1517C33973049 |
 | Demo video | **TODO** |
-| Explorer | https://sepolia.arbiscan.io |
 
 ## Local setup
 
@@ -73,7 +76,7 @@ npm run dev          # http://localhost:43147
 npm run typecheck
 ```
 
-Until `NEXT_PUBLIC_ESCROW_ADDRESS` is set, the app is browsable and writes stay disabled.
+`web/.env.example` already points at the Sepolia escrow. Copy it to `.env.local`, then override RPC / chain / addresses for Anvil.
 
 ### Full local demo (Anvil)
 
@@ -130,7 +133,7 @@ forge script script/Deploy.s.sol \
 ```
 
 4. Put the printed escrow address in `web/.env.local` as `NEXT_PUBLIC_ESCROW_ADDRESS`, keep `NEXT_PUBLIC_CHAIN_ID=421614`, restart `npm run dev`.
-5. Paste the address into this README’s TODO table before submission.
+5. The Sepolia address in this README is already live; only update the table if you redeploy.
 
 Regenerate the frontend ABI after any Solidity change:
 

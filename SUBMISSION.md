@@ -18,10 +18,10 @@ Arbitrum Open House Singapore **Online** Buildathon. Dates below are the publish
 
 ## Onchain (Arbitrum Sepolia)
 
-- [ ] Deploy `MilestoneEscrow` with Circle testnet USDC `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`
+- [x] Deploy `MilestoneEscrow` with Circle testnet USDC `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`
 - [ ] Verify the contract on Arbiscan (or upload flattened source)
-- [ ] Paste address + tx into README **Deployed address** table (currently TODO)
-- [ ] Point `web/.env.local` `NEXT_PUBLIC_ESCROW_ADDRESS` at that address
+- [x] Paste address + tx into README **Deployed address** table
+- [x] Point `web/.env.example` `NEXT_PUBLIC_ESCROW_ADDRESS` at that address (`web/.env.local` for local runs)
 - [ ] Create at least one real campaign on Sepolia so `/campaign/0` is not empty
 
 ## Demo video (≤ 3 minutes suggested)
@@ -41,8 +41,10 @@ Arbitrum Open House Singapore **Online** Buildathon. Dates below are the publish
 
 | Field | Value |
 |---|---|
-| Repo | _this repository_ |
+| Repo | https://cursor.com/codebase/callydus/tmp-0f72549bdb4a9c0f |
 | Live app | TODO |
-| Contract | TODO |
+| Contract | `0x72b474DB34268281CD10db655cc1517C33973049` |
 | Video | TODO |
-| Arbiscan | TODO |
+| Arbiscan | https://sepolia.arbiscan.io/address/0x72b474DB34268281CD10db655cc1517C33973049 |
+| Deploy tx | https://sepolia.arbiscan.io/tx/0xd1ecf3062cf3ab3bf34cbaf7429ceb214a7c75416d3289709864c950cf548057 |
+| Deployer | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4` |
