@@ -8,6 +8,7 @@ import {
   ESCROW_FROM_BLOCK,
   explorerTx,
   isEscrowConfigured,
+  milemarkChain,
 } from "@/lib/chains";
 import { formatUsdc, shortAddress } from "@/lib/format";
 
@@ -27,7 +28,7 @@ export function CampaignTimeline({
   campaignId: bigint;
   refreshKey: number;
 }) {
-  const client = usePublicClient();
+  const client = usePublicClient({ chainId: milemarkChain.id });
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -8,6 +8,7 @@ import {
   ESCROW_ADDRESS,
   explorerAddress,
   isEscrowConfigured,
+  milemarkChain,
 } from "@/lib/chains";
 import { formatUsdc, shortAddress, toBigInt } from "@/lib/format";
 import { linkLabel, publicHref } from "@/lib/links";
@@ -160,7 +161,8 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     abi: milestoneEscrowAbi,
     functionName: "getCampaign",
     args: id !== null ? [id] : undefined,
-    query: { enabled: id !== null && isEscrowConfigured },
+    chainId: milemarkChain.id,
+    query: { enabled: id !== null && isEscrowConfigured, retry: 1 },
   });
 
   const milestones = useReadContract({
@@ -168,7 +170,8 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     abi: milestoneEscrowAbi,
     functionName: "getMilestones",
     args: id !== null ? [id] : undefined,
-    query: { enabled: id !== null && isEscrowConfigured },
+    chainId: milemarkChain.id,
+    query: { enabled: id !== null && isEscrowConfigured, retry: 1 },
   });
 
   const attestors = useReadContract({
@@ -176,7 +179,8 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     abi: milestoneEscrowAbi,
     functionName: "getAttestors",
     args: id !== null ? [id] : undefined,
-    query: { enabled: id !== null && isEscrowConfigured },
+    chainId: milemarkChain.id,
+    query: { enabled: id !== null && isEscrowConfigured, retry: 1 },
   });
 
   const refetchCampaign = campaign.refetch;
@@ -224,7 +228,31 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     );
   }
 
-  if (campaign.isLoading || milestones.isLoading) {
+  if (campaign.isError || milestones.isError) {
+    const message =
+      (campaign.error instanceof Error && campaign.error.message) ||
+      (milestones.error instanceof Error && milestones.error.message) ||
+      "RPC read failed.";
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Could not load campaign {id.toString()}</CardTitle>
+          <CardDescription>{message}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <button
+            type="button"
+            className="text-sm text-accent hover:underline"
+            onClick={() => refetch()}
+          >
+            Retry
+          </button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (campaign.isPending || milestones.isPending) {
     return (
       <Card>
         <CardHeader>
@@ -234,7 +262,7 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     );
   }
 
-  if (campaign.isError || !view) {
+  if (!view) {
     return (
       <Card>
         <CardHeader>

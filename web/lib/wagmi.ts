@@ -1,10 +1,15 @@
 import { createConfig, http, injected } from "wagmi";
 import { anvil, arbitrumSepolia } from "./chains";
 
+const upstreamSepolia =
+  process.env.NEXT_PUBLIC_RPC ?? "https://sepolia-rollup.arbitrum.io/rpc";
+
 const sepoliaRpc =
   process.env.NEXT_PUBLIC_CHAIN_ID === "31337"
     ? "https://sepolia-rollup.arbitrum.io/rpc"
-    : (process.env.NEXT_PUBLIC_RPC ?? "https://sepolia-rollup.arbitrum.io/rpc");
+    : typeof window === "undefined"
+      ? upstreamSepolia
+      : "/rpc";
 
 const anvilRpc =
   process.env.NEXT_PUBLIC_CHAIN_ID === "31337"
@@ -15,8 +20,8 @@ export const wagmiConfig = createConfig({
   chains: [arbitrumSepolia, anvil],
   connectors: [injected()],
   transports: {
-    [arbitrumSepolia.id]: http(sepoliaRpc),
-    [anvil.id]: http(anvilRpc),
+    [arbitrumSepolia.id]: http(sepoliaRpc, { timeout: 20_000 }),
+    [anvil.id]: http(anvilRpc, { timeout: 20_000 }),
   },
   ssr: true,
 });
