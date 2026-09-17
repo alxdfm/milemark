@@ -1,4 +1,17 @@
 import { defineChain } from "viem";
+import { USDC_DECIMALS as DOMAIN_USDC_DECIMALS } from "@/lib/milemark";
+
+export {
+  CIRCLE_USDC_ARB_SEPOLIA,
+  DEMO_CAMPAIGN_ID,
+  ESCROW_ADDRESS,
+  ESCROW_FROM_BLOCK,
+  LIVE_ESCROW_V2,
+  OBSOLETE_ESCROW_V1,
+  USDC_ADDRESS,
+  isEscrowConfigured,
+} from "@/lib/contracts";
+export { ZERO_ADDRESS } from "@/lib/milemark";
 
 const rpc =
   process.env.NEXT_PUBLIC_RPC ?? "https://sepolia-rollup.arbitrum.io/rpc";
@@ -35,34 +48,7 @@ export const anvil = defineChain({
 
 export const milemarkChain = chainId === 31337 ? anvil : arbitrumSepolia;
 
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
-
-function readAddress(raw: string | undefined, fallback: `0x${string}`): `0x${string}` {
-  const value = (raw ?? "").trim();
-  return /^0x[a-fA-F0-9]{40}$/.test(value) ? (value as `0x${string}`) : fallback;
-}
-
-export { ZERO_ADDRESS };
-
-export const ESCROW_ADDRESS = readAddress(
-  process.env.NEXT_PUBLIC_ESCROW_ADDRESS,
-  ZERO_ADDRESS,
-);
-
-/** Circle testnet USDC on Arbitrum Sepolia. Override for MockERC20 on Anvil. */
-export const USDC_ADDRESS = readAddress(
-  process.env.NEXT_PUBLIC_USDC_ADDRESS,
-  "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
-);
-
-export const USDC_DECIMALS = 6;
-
-/** Start of getLogs range. Arb Sepolia RPCs reject fromBlock 0. */
-export const ESCROW_FROM_BLOCK = BigInt(
-  process.env.NEXT_PUBLIC_ESCROW_FROM_BLOCK ?? "309650000",
-);
-
-export const isEscrowConfigured = ESCROW_ADDRESS !== ZERO_ADDRESS;
+export const USDC_DECIMALS = DOMAIN_USDC_DECIMALS;
 
 export function explorerTx(hash: `0x${string}`) {
   const base = milemarkChain.blockExplorers?.default?.url;

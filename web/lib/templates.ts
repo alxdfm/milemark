@@ -1,4 +1,6 @@
-export type MilestoneDraft = { description: string; amount: string };
+import type { MilestoneDraft } from "@/lib/milemark";
+
+export type { MilestoneDraft };
 
 export type CampaignTemplate = {
   id: string;

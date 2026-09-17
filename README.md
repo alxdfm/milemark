@@ -19,6 +19,8 @@ Events: `CampaignCreated`, `MilestoneCompleted`, `Claimed`, `Reclaimed`.
 
 ## Architecture
 
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for layers and ABI freeze notes. Judge walkthrough: [`docs/DEMO.md`](docs/DEMO.md).
+
 ```
 milemark/
 ├── contracts/                 Foundry (Solidity ^0.8.24)
@@ -29,8 +31,12 @@ milemark/
 │   └── foundry.toml
 ├── web/                       Next.js App Router + wagmi/viem
 │   ├── app/                   home, /create, /campaign/[id]
-│   ├── lib/abi.ts             committed ABI from `forge build`
-│   └── lib/chains.ts          Arbitrum Sepolia (421614)
+│   ├── lib/milemark/          pure domain (parse, roles, USDC, validation)
+│   ├── lib/contracts/         barrel ABI + live v2 addresses
+│   ├── hooks/use-campaign.ts
+│   └── components/{campaign,create}/
+├── docs/ARCHITECTURE.md
+├── docs/DEMO.md
 ├── README.md
 └── SUBMISSION.md
 ```
@@ -53,7 +59,7 @@ v2 **breaks the v1 ABI**. Do not point this frontend at the v1 address.
 | Network | Arbitrum Sepolia (421614) |
 | MilestoneEscrow v2 | [`0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207`](https://sepolia.arbiscan.io/address/0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207) |
 | Deploy tx | [`0x38bf2071c5cb577c75f86a559b1461a812f103a814113121e7b9360eb4e9965a`](https://sepolia.arbiscan.io/tx/0x38bf2071c5cb577c75f86a559b1461a812f103a814113121e7b9360eb4e9965a) |
-| Demo campaign | id `0` · title `MileMark v2 demo` · create tx [`0x90e97513c290a5d94e11c9355e0c7264954e682c46b6fd014b5972f2b1d57b4a`](https://sepolia.arbiscan.io/tx/0x90e97513c290a5d94e11c9355e0c7264954e682c46b6fd014b5972f2b1d57b4a) |
+| Demo campaign | featured id `2` · original v2 demo id `0` · title `MileMark v2 demo` · create tx [`0x90e97513c290a5d94e11c9355e0c7264954e682c46b6fd014b5972f2b1d57b4a`](https://sepolia.arbiscan.io/tx/0x90e97513c290a5d94e11c9355e0c7264954e682c46b6fd014b5972f2b1d57b4a) |
 | USDC (Circle testnet) | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
 | Explorer | https://sepolia.arbiscan.io/address/0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207 |
 | Obsolete v1 (do not use) | `0x72b474DB34268281CD10db655cc1517C33973049` |
@@ -141,7 +147,7 @@ forge script script/Deploy.s.sol \
 4. Put the printed escrow address in `web/.env.local` as `NEXT_PUBLIC_ESCROW_ADDRESS`, keep `NEXT_PUBLIC_CHAIN_ID=421614`, restart `npm run dev`.
 5. The v2 Sepolia address in this README is already live; only update the table if you redeploy.
 
-Regenerate the frontend ABI after any Solidity change:
+Regenerate the frontend ABI after any Solidity change (`web/lib/contracts/abi.ts`):
 
 ```bash
 cd contracts && forge build
@@ -150,8 +156,10 @@ python3 ../scripts/export-abi.py
 
 ## Demo script for judges
 
-1. Open the app (new v2 Sepolia deploy or the Anvil flow). Connect the **sponsor** wallet.
-2. **Create** — use a template (Hackathon / Retainer / Grant). Set beneficiary, one or two attestors, a short deadline if you will demo reclaim. Approve, then create. Note the campaign id and share the `/campaign/{id}` link.
+See [`docs/DEMO.md`](docs/DEMO.md). Featured UI path: `/campaign/2`.
+
+1. Open the app (live v2 Sepolia or the Anvil flow). Connect the **sponsor** wallet.
+2. **Create** — use a template (Hackathon / Retainer / Grant). Set beneficiary, one or two attestors, a short deadline if you will demo reclaim. Approve is disabled when wallet USDC is below the total. Approve, then create. Note the campaign id and share the `/campaign/{id}` link. Each tx links out to Arbiscan.
 3. Switch to an **attestor**. Mark milestone 2 complete first (any-order) with an evidence URI (ipfs or https). Mark milestone 1 with empty evidence.
 4. Switch to the **beneficiary**. **Claim**. Wallet USDC increases. Claim again — it reverts.
 5. After the deadline (Anvil: `cast rpc evm_increaseTime 2592000 && cast rpc evm_mine`, or wait): connect the **sponsor** and **Reclaim** remaining incomplete miles. Completing a reclaimed mile reverts.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate web/lib/abi.ts from Foundry artifacts. Run after `forge build`."""
+"""Regenerate web/lib/contracts/abi.ts from Foundry artifacts. Run after `forge build`."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACT = ROOT / "contracts/out/MilestoneEscrow.sol/MilestoneEscrow.json"
-OUT = ROOT / "web/lib/abi.ts"
+OUT = ROOT / "web/lib/contracts/abi.ts"
 
 ERC20 = [
     {
