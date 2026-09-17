@@ -46,15 +46,17 @@ No indexer. The UI reads `getCampaign` / `getMilestones` / `getAttestors` and re
 
 ## Deployed address
 
-v2 **breaks the v1 ABI**. The previous Sepolia deploy is obsolete and must not be used with this frontend:
+v2 **breaks the v1 ABI**. Do not point this frontend at the v1 address.
 
 | Item | Value |
 |---|---|
 | Network | Arbitrum Sepolia (421614) |
-| MilestoneEscrow v2 | **TODO — redeploy required** |
-| Obsolete v1 (do not use) | `0x72b474DB34268281CD10db655cc1517C33973049` |
+| MilestoneEscrow v2 | [`0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207`](https://sepolia.arbiscan.io/address/0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207) |
+| Deploy tx | [`0x38bf2071c5cb577c75f86a559b1461a812f103a814113121e7b9360eb4e9965a`](https://sepolia.arbiscan.io/tx/0x38bf2071c5cb577c75f86a559b1461a812f103a814113121e7b9360eb4e9965a) |
+| Demo campaign | id `0` · title `MileMark v2 demo` · create tx [`0x90e97513c290a5d94e11c9355e0c7264954e682c46b6fd014b5972f2b1d57b4a`](https://sepolia.arbiscan.io/tx/0x90e97513c290a5d94e11c9355e0c7264954e682c46b6fd014b5972f2b1d57b4a) |
 | USDC (Circle testnet) | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
-| Explorer | https://sepolia.arbiscan.io |
+| Explorer | https://sepolia.arbiscan.io/address/0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207 |
+| Obsolete v1 (do not use) | `0x72b474DB34268281CD10db655cc1517C33973049` |
 | Demo video | **TODO** |
 
 ## Local setup
@@ -78,7 +80,7 @@ npm run dev          # http://localhost:43147
 npm run typecheck
 ```
 
-`web/.env.example` leaves `NEXT_PUBLIC_ESCROW_ADDRESS` empty until you deploy v2. Copy it to `.env.local`, then fill the new address (or Anvil addresses).
+`web/.env.example` points at the live v2 Sepolia escrow. Copy it to `.env.local`, then override RPC / chain / addresses for Anvil.
 
 ### Full local demo (Anvil)
 
@@ -137,7 +139,7 @@ forge script script/Deploy.s.sol \
 ```
 
 4. Put the printed escrow address in `web/.env.local` as `NEXT_PUBLIC_ESCROW_ADDRESS`, keep `NEXT_PUBLIC_CHAIN_ID=421614`, restart `npm run dev`.
-5. Paste the new address into this README’s TODO table.
+5. The v2 Sepolia address in this README is already live; only update the table if you redeploy.
 
 Regenerate the frontend ABI after any Solidity change:
 

@@ -20,12 +20,12 @@ MileMark **v2** (metadata, 1-of-n attestors, deadline reclaim, evidence). The v1
 
 ## Onchain (Arbitrum Sepolia)
 
-- [ ] Deploy **v2** `MilestoneEscrow` with Circle testnet USDC `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`
+- [x] Deploy **v2** `MilestoneEscrow` with Circle testnet USDC `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`
 - [ ] Verify the contract on Arbiscan (or upload flattened source)
-- [ ] Paste the **new** address + tx into README **Deployed address** table (currently TODO)
-- [ ] Point `web/.env.example` `NEXT_PUBLIC_ESCROW_ADDRESS` at the v2 address
-- [ ] Create at least one real v2 campaign on Sepolia so `/campaign/0` is not empty
-- [ ] Do not wire the UI to obsolete v1 `0x72b474DB34268281CD10db655cc1517C33973049`
+- [x] Paste the **new** address + tx into README **Deployed address** table
+- [x] Point `web/.env.example` `NEXT_PUBLIC_ESCROW_ADDRESS` at the v2 address
+- [x] Create at least one real v2 campaign on Sepolia (`/campaign/0`, title `MileMark v2 demo`)
+- [x] Do not wire the UI to obsolete v1 `0x72b474DB34268281CD10db655cc1517C33973049`
 
 ## Demo video (≤ 3 minutes suggested)
 
@@ -46,7 +46,9 @@ MileMark **v2** (metadata, 1-of-n attestors, deadline reclaim, evidence). The v1
 |---|---|
 | Repo | https://cursor.com/codebase/callydus/tmp-0f72549bdb4a9c0f |
 | Live app | TODO |
-| Contract (v2) | **TODO — redeploy required** |
+| Contract (v2) | `0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207` |
+| Deploy tx | https://sepolia.arbiscan.io/tx/0x38bf2071c5cb577c75f86a559b1461a812f103a814113121e7b9360eb4e9965a |
+| Demo campaign | id `0` · [create tx](https://sepolia.arbiscan.io/tx/0x90e97513c290a5d94e11c9355e0c7264954e682c46b6fd014b5972f2b1d57b4a) |
 | Video | TODO |
-| Arbiscan | TODO |
+| Arbiscan | https://sepolia.arbiscan.io/address/0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207 |
 | Obsolete v1 | `0x72b474DB34268281CD10db655cc1517C33973049` (do not use) |
