@@ -57,6 +57,11 @@ export const USDC_ADDRESS = readAddress(
 
 export const USDC_DECIMALS = 6;
 
+/** Start of getLogs range. Arb Sepolia RPCs reject fromBlock 0. */
+export const ESCROW_FROM_BLOCK = BigInt(
+  process.env.NEXT_PUBLIC_ESCROW_FROM_BLOCK ?? "309650000",
+);
+
 export const isEscrowConfigured = ESCROW_ADDRESS !== ZERO_ADDRESS;
 
 export function explorerTx(hash: `0x${string}`) {

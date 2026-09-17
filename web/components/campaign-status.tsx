@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { milestoneEscrowAbi } from "@/lib/abi";
 import {
@@ -13,6 +13,7 @@ import { formatUsdc, shortAddress, toBigInt } from "@/lib/format";
 import { linkLabel, publicHref } from "@/lib/links";
 import { ClaimButton } from "@/components/claim-button";
 import { ReclaimButton } from "@/components/reclaim-button";
+import { CampaignTimeline } from "@/components/campaign-timeline";
 import { CompleteButton } from "@/components/complete-button";
 import {
   Card,
@@ -152,6 +153,7 @@ function DeadlineLine({
 export function CampaignStatus({ campaignId }: { campaignId: string }) {
   const id = parseId(campaignId);
   const { address } = useAccount();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const campaign = useReadContract({
     address: ESCROW_ADDRESS,
@@ -184,6 +186,7 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     void refetchCampaign();
     void refetchMilestones();
     void refetchAttestors();
+    setRefreshKey((k) => k + 1);
   }, [refetchCampaign, refetchMilestones, refetchAttestors]);
 
   const view = useMemo(() => parseCampaignView(campaign.data), [campaign.data]);
@@ -298,6 +301,17 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
             <RoleChip label="Attestor" mine={isAttestor} />
             <RoleChip label="Beneficiary" mine={isBeneficiary} />
           </div>
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-line">
+            <div
+              className="h-full bg-accent transition-all"
+              style={{
+                width: `${list.length ? Math.round((100 * list.filter((m) => m.completed).length) / list.length) : 0}%`,
+              }}
+            />
+          </div>
+          <p className="mt-1 text-[10px] uppercase tracking-wider text-muted">
+            {list.filter((m) => m.completed).length}/{list.length} milestones complete
+          </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
           <div className="flex justify-between gap-2">
@@ -420,6 +434,16 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
             disabled={!isBeneficiary}
             onSettled={refetch}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Activity</CardTitle>
+          <CardDescription>Onchain events for this campaign (no indexer).</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CampaignTimeline campaignId={id} refreshKey={refreshKey} />
         </CardContent>
       </Card>
 

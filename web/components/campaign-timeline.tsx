@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { usePublicClient } from "wagmi";
 import { milestoneEscrowAbi } from "@/lib/abi";
-import { ESCROW_ADDRESS, explorerTx, isEscrowConfigured } from "@/lib/chains";
+import {
+  ESCROW_ADDRESS,
+  ESCROW_FROM_BLOCK,
+  explorerTx,
+  isEscrowConfigured,
+} from "@/lib/chains";
 import { formatUsdc, shortAddress } from "@/lib/format";
 
 type Item = {
@@ -38,7 +43,7 @@ export function CampaignTimeline({
         const common = {
           address: ESCROW_ADDRESS,
           abi: milestoneEscrowAbi,
-          fromBlock: 0n,
+          fromBlock: ESCROW_FROM_BLOCK,
           args: { campaignId },
         } as const;
 
@@ -81,7 +86,7 @@ export function CampaignTimeline({
             logIndex: log.logIndex ?? 0,
             txHash: log.transactionHash,
             title: `Milestone ${(log.args.index ?? 0n) + 1n} completed`,
-            detail: `${shortAddress(log.args.attestor ?? "0x")} ${ev ? `· ${ev}` : ""}`.trim(),
+            detail: `${shortAddress(String(log.args.attestor ?? ""))}${ev ? ` · ${ev}` : ""}`.trim(),
           });
         }
         for (const log of claimed) {

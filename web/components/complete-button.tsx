@@ -55,6 +55,11 @@ export function CompleteButton({
       >
         {waiting ? "Confirm…" : "Mark complete"}
       </Button>
+      {disabled && (
+        <p className="text-xs text-muted">
+          Connect a listed attestor wallet to mark complete.
+        </p>
+      )}
       {error && <p className="text-xs text-red-300">{friendlyError(error)}</p>}
       {receipt.isSuccess && tx && (
         <a
