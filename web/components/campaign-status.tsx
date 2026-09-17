@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { milestoneEscrowAbi } from "@/lib/abi";
 import {
@@ -9,19 +9,11 @@ import {
   explorerAddress,
   isEscrowConfigured,
 } from "@/lib/chains";
-import {
-  externalHref,
-  formatCountdown,
-  formatUnix,
-  formatUsdc,
-  shortAddress,
-  toBigInt,
-} from "@/lib/format";
-import { CampaignLookup } from "@/components/campaign-lookup";
-import { CampaignTimeline } from "@/components/campaign-timeline";
+import { formatUsdc, shortAddress, toBigInt } from "@/lib/format";
+import { linkLabel, publicHref } from "@/lib/links";
 import { ClaimButton } from "@/components/claim-button";
-import { CompleteButton } from "@/components/complete-button";
 import { ReclaimButton } from "@/components/reclaim-button";
+import { CompleteButton } from "@/components/complete-button";
 import {
   Card,
   CardContent,
@@ -29,6 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CampaignLookup } from "@/components/campaign-lookup";
 
 type Milestone = {
   description: string;
@@ -51,6 +44,15 @@ type CampaignView = {
   reclaimable: bigint;
 };
 
+function parseId(raw: string): bigint | null {
+  if (!/^\d+$/.test(raw.trim())) return null;
+  try {
+    return BigInt(raw.trim());
+  } catch {
+    return null;
+  }
+}
+
 function asRecord(raw: unknown): (Record<string, unknown> & unknown[]) | null {
   if (!raw || typeof raw !== "object") return null;
   return raw as Record<string, unknown> & unknown[];
@@ -69,7 +71,7 @@ function parseCampaignView(raw: unknown): CampaignView | null {
   return {
     sponsor,
     beneficiary,
-    title: String(r.title ?? r[2] ?? ""),
+    title: String(r.title ?? r[2] ?? "Campaign"),
     briefURI: String(r.briefURI ?? r[3] ?? ""),
     deadline: toBigInt(r.deadline ?? r[4]) ?? 0n,
     milestoneCount: toBigInt(r.milestoneCount ?? r[5]) ?? 0n,
@@ -92,15 +94,6 @@ function asMilestone(raw: unknown): Milestone | null {
   return { description, evidenceURI, amount, completed, claimed, reclaimed };
 }
 
-function parseId(raw: string): bigint | null {
-  if (!/^\d+$/.test(raw.trim())) return null;
-  try {
-    return BigInt(raw.trim());
-  } catch {
-    return null;
-  }
-}
-
 function RoleChip({ label, mine }: { label: string; mine: boolean }) {
   return (
     <span
@@ -116,34 +109,49 @@ function RoleChip({ label, mine }: { label: string; mine: boolean }) {
   );
 }
 
-function AddressLink({ address }: { address: `0x${string}` }) {
-  const href = explorerAddress(address);
-  if (href) {
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noreferrer"
-        className="font-mono text-sm text-foreground hover:text-accent"
+function DeadlineLine({
+  deadline,
+  reclaimable,
+}: {
+  deadline: bigint;
+  reclaimable: bigint;
+}) {
+  const ms = Number(deadline) * 1000;
+  const expired = Date.now() > ms;
+  const date = new Date(ms);
+  const diff = Math.abs(ms - Date.now());
+  const mins = Math.round(diff / 60000);
+  const rel =
+    mins < 60
+      ? `${mins}m`
+      : mins < 60 * 48
+        ? `${Math.round(mins / 60)}h`
+        : `${Math.round(mins / 60 / 24)}d`;
+  return (
+    <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted">
+      <span>
+        Deadline {date.toLocaleString()}{" "}
+        <span className="text-[10px] uppercase tracking-wider">
+          ({Intl.DateTimeFormat().resolvedOptions().timeZone})
+        </span>
+      </span>
+      <span
+        className={
+          expired
+            ? "rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] uppercase tracking-wider text-red-200"
+            : "rounded-full bg-accent/15 px-2 py-0.5 text-[10px] uppercase tracking-wider text-accent"
+        }
       >
-        {shortAddress(address)}
-      </a>
-    );
-  }
-  return <span className="font-mono text-sm">{shortAddress(address)}</span>;
+        {expired ? `Expired ${rel} ago` : `${rel} left`}
+      </span>
+      <span>· reclaimable {formatUsdc(reclaimable)} USDC</span>
+    </p>
+  );
 }
 
 export function CampaignStatus({ campaignId }: { campaignId: string }) {
   const id = parseId(campaignId);
   const { address } = useAccount();
-  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
-  const [copied, setCopied] = useState(false);
-  const [timelineKey, setTimelineKey] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 15_000);
-    return () => clearInterval(timer);
-  }, []);
 
   const campaign = useReadContract({
     address: ESCROW_ADDRESS,
@@ -176,7 +184,6 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     void refetchCampaign();
     void refetchMilestones();
     void refetchAttestors();
-    setTimelineKey((k) => k + 1);
   }, [refetchCampaign, refetchMilestones, refetchAttestors]);
 
   const view = useMemo(() => parseCampaignView(campaign.data), [campaign.data]);
@@ -194,8 +201,7 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
         <CardHeader>
           <CardTitle>Escrow not configured</CardTitle>
           <CardDescription>
-            Deploy MilestoneEscrow v2 and set NEXT_PUBLIC_ESCROW_ADDRESS. The
-            v1 address is obsolete after the ABI break.
+            Set NEXT_PUBLIC_ESCROW_ADDRESS after deploying MilestoneEscrow.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -207,10 +213,6 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
       <Card>
         <CardHeader>
           <CardTitle>Invalid campaign id</CardTitle>
-          <CardDescription>
-            Campaign ids are unsigned integers assigned in creation order,
-            starting at 0.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <CampaignLookup />
@@ -219,36 +221,26 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     );
   }
 
-  if (campaign.isLoading || milestones.isLoading || attestors.isLoading) {
+  if (campaign.isLoading || milestones.isLoading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Loading campaign {id.toString()}</CardTitle>
-          <CardDescription>Reading from the escrow contract…</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="h-4 w-2/3 animate-pulse rounded bg-line" />
-            <div className="h-16 animate-pulse rounded bg-line" />
-            <div className="h-16 animate-pulse rounded bg-line" />
-          </div>
-        </CardContent>
       </Card>
     );
   }
 
-  if (campaign.isError || milestones.isError || !view) {
+  if (campaign.isError || !view) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Campaign not found</CardTitle>
           <CardDescription>
-            Nothing is stored at id {id.toString()} on this escrow. Check the
-            network and contract address, or create a campaign.
+            Nothing at id {id.toString()} on this escrow.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <CampaignLookup />
+        <CardContent>
           <Link href="/create" className="text-sm text-accent hover:underline">
             Create a campaign →
           </Link>
@@ -257,160 +249,99 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     );
   }
 
-  const sponsor = view.sponsor;
-  const beneficiary = view.beneficiary;
-  const claimable = view.claimable;
-  const reclaimable = view.reclaimable;
   const total = list.reduce((s, m) => s + m.amount, 0n);
-  const released = list
-    .filter((m) => m.completed)
-    .reduce((s, m) => s + m.amount, 0n);
+  const released = list.filter((m) => m.completed).reduce((s, m) => s + m.amount, 0n);
   const paid = list.filter((m) => m.claimed).reduce((s, m) => s + m.amount, 0n);
-
-  const isSponsor =
-    !!address && address.toLowerCase() === sponsor.toLowerCase();
-  const isBeneficiary =
-    !!address && address.toLowerCase() === beneficiary.toLowerCase();
   const isAttestor =
     !!address &&
     attestorList.some((a) => a.toLowerCase() === address.toLowerCase());
-  const roleLabel = !address
-    ? "Viewer"
-    : isSponsor
-      ? "Sponsor"
-      : isAttestor
-        ? "Attestor"
-        : isBeneficiary
-          ? "Beneficiary"
-          : "Other";
-
-  const briefHref = externalHref(view.briefURI);
-  const escrowHref = explorerAddress(ESCROW_ADDRESS);
-  const displayTitle = view.title.trim() || `Campaign ${id.toString()}`;
-
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      setCopied(false);
-    }
-  }
+  const isBeneficiary =
+    !!address && address.toLowerCase() === view.beneficiary.toLowerCase();
+  const isSponsor =
+    !!address && address.toLowerCase() === view.sponsor.toLowerCase();
+  const sponsorExplorer = explorerAddress(view.sponsor);
+  const briefHref = publicHref(view.briefURI);
 
   return (
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
-                Campaign {id.toString()}
-              </p>
-              <CardTitle className="mt-1 break-words">{displayTitle}</CardTitle>
-              <CardDescription className="mt-2">
-                {list.length} milestone{list.length === 1 ? "" : "s"} ·{" "}
-                {formatUsdc(total)} USDC locked
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <RoleChip label={roleLabel} mine={Boolean(address)} />
-              <button
-                type="button"
-                onClick={() => void copyLink()}
-                className="rounded-md border border-line px-2.5 py-1 text-xs text-muted hover:text-foreground"
-              >
-                {copied ? "Copied" : "Copy link"}
-              </button>
-            </div>
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
+            Campaign {id.toString()}
+          </p>
+          <CardTitle className="mt-1">{view.title}</CardTitle>
+          <CardDescription className="mt-2">
+            {list.length} milestones · {formatUsdc(total)} USDC locked
+            {view.briefURI ? (
+              <>
+                {" · "}
+                {briefHref ? (
+                  <a
+                    className="text-accent hover:underline"
+                    href={briefHref}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {linkLabel(view.briefURI)}
+                  </a>
+                ) : (
+                  <span className="text-muted" title={view.briefURI}>
+                    brief (unsupported URI)
+                  </span>
+                )}
+              </>
+            ) : null}
+          </CardDescription>
+          <DeadlineLine deadline={view.deadline} reclaimable={view.reclaimable} />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <RoleChip label="Sponsor" mine={isSponsor} />
+            <RoleChip label="Attestor" mine={isAttestor} />
+            <RoleChip label="Beneficiary" mine={isBeneficiary} />
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-2">
-            {isSponsor && <RoleChip label="Sponsor" mine />}
-            {isAttestor && <RoleChip label="Attestor" mine />}
-            {isBeneficiary && <RoleChip label="Beneficiary" mine />}
-            {address && !isSponsor && !isAttestor && !isBeneficiary && (
-              <RoleChip label="Other" mine={false} />
+        <CardContent className="flex flex-col gap-3 text-sm">
+          <div className="flex justify-between gap-2">
+            <span className="text-muted">Sponsor</span>
+            {sponsorExplorer ? (
+              <a
+                className="font-mono hover:text-accent"
+                href={sponsorExplorer}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {shortAddress(view.sponsor)}
+              </a>
+            ) : (
+              <span className="font-mono">{shortAddress(view.sponsor)}</span>
             )}
           </div>
-
-          {view.briefURI && (
-            <p className="text-sm">
-              <span className="mr-2 text-xs uppercase tracking-[0.14em] text-muted">
-                Brief
-              </span>
-              {briefHref ? (
-                <a
-                  href={briefHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="break-all text-accent hover:underline"
-                >
-                  {view.briefURI}
-                </a>
-              ) : (
-                <span className="break-all font-mono text-xs">{view.briefURI}</span>
-              )}
-            </p>
-          )}
-
-          <div className="rounded-lg border border-line bg-ink px-4 py-3">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-muted">
-              Deadline
-            </p>
-            <p className="mt-1 text-sm">
-              {formatCountdown(view.deadline, nowSec)}
-            </p>
-            <p className="mt-0.5 font-mono text-xs text-muted">
-              {formatUnix(view.deadline)}
-            </p>
+          <div className="flex justify-between gap-2">
+            <span className="text-muted">Beneficiary</span>
+            <span className="font-mono">{shortAddress(view.beneficiary)}</span>
           </div>
-
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-xs uppercase tracking-[0.14em] text-muted">
-                Sponsor
+          <div className="flex flex-col gap-1">
+            <span className="text-muted">Attestors ({attestorList.length})</span>
+            {attestorList.map((a) => (
+              <span key={a} className="font-mono text-xs">
+                {shortAddress(a)}
               </span>
-              <AddressLink address={sponsor} />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-xs uppercase tracking-[0.14em] text-muted">
-                Beneficiary
-              </span>
-              <AddressLink address={beneficiary} />
-            </div>
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-              <span className="text-xs uppercase tracking-[0.14em] text-muted">
-                Attestors
-              </span>
-              <div className="flex flex-col items-end gap-1">
-                {attestorList.map((a) => (
-                  <AddressLink key={a} address={a} />
-                ))}
-              </div>
-            </div>
-            {escrowHref && (
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs uppercase tracking-[0.14em] text-muted">
-                  Escrow
-                </span>
-                <a
-                  href={escrowHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-accent hover:underline"
-                >
-                  Arbiscan
-                </a>
-              </div>
-            )}
+            ))}
           </div>
-
           <div className="grid grid-cols-3 gap-2 rounded-lg border border-line bg-ink p-3 text-center">
-            <Stat label="Released" value={formatUsdc(released)} />
-            <Stat label="Claimable" value={formatUsdc(claimable)} accent />
-            <Stat label="Paid out" value={formatUsdc(paid)} />
+            <div>
+              <p className="text-[10px] uppercase text-muted">Released</p>
+              <p className="mt-1 font-mono text-sm">{formatUsdc(released)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted">Claimable</p>
+              <p className="mt-1 font-mono text-sm text-accent">
+                {formatUsdc(view.claimable)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase text-muted">Paid</p>
+              <p className="mt-1 font-mono text-sm">{formatUsdc(paid)}</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -418,42 +349,74 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
       <Card>
         <CardHeader>
           <CardTitle>Milestones</CardTitle>
-          <CardDescription>
-            Completion is any-order. Attestors may attach an evidence URI when
-            they mark a mile complete.
-          </CardDescription>
+          <CardDescription>Any-order completion · evidence optional</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-0">
-          {list.length === 0 && (
-            <p className="text-sm text-muted">No milestones on this campaign.</p>
-          )}
-          {list.map((m, i) => (
-            <MilestoneRow
-              key={i}
-              index={i}
-              last={i === list.length - 1}
-              milestone={m}
-              campaignId={id}
-              canComplete={isAttestor && !m.completed && !m.reclaimed}
-              onSettled={refetch}
-            />
-          ))}
+        <CardContent className="flex flex-col gap-3">
+          {list.map((m, i) => {
+            const evidenceHref = publicHref(m.evidenceURI);
+            return (
+              <div
+                key={i}
+                className="flex flex-col gap-2 border-b border-line py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-mono text-xs text-muted">
+                    {String(i + 1).padStart(2, "0")}
+                  </p>
+                  <p className="font-medium">{m.description}</p>
+                  <p className="text-xs text-muted">
+                    {formatUsdc(m.amount)} USDC ·{" "}
+                    {m.reclaimed
+                      ? "reclaimed"
+                      : m.claimed
+                        ? "claimed"
+                        : m.completed
+                          ? "completed"
+                          : "open"}
+                  </p>
+                  {m.evidenceURI ? (
+                    evidenceHref ? (
+                      <a
+                        className="text-xs text-accent hover:underline"
+                        href={evidenceHref}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {linkLabel(m.evidenceURI)}
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted" title={m.evidenceURI}>
+                        evidence URI (not browser-openable)
+                      </span>
+                    )
+                  ) : null}
+                </div>
+                <CompleteButton
+                  campaignId={id}
+                  index={i}
+                  disabled={!isAttestor || m.completed || m.reclaimed}
+                  onSettled={refetch}
+                />
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>Claim</CardTitle>
-          <CardDescription>
-            {isBeneficiary
-              ? "Withdraw the sum of completed milestones you have not claimed yet."
-              : "Connect the beneficiary wallet to withdraw released USDC."}
-          </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-2">
+          {!address && (
+            <p className="text-xs text-muted">Connect the beneficiary wallet to claim.</p>
+          )}
+          {address && !isBeneficiary && (
+            <p className="text-xs text-muted">Only the beneficiary can claim.</p>
+          )}
           <ClaimButton
             campaignId={id}
-            amount={claimable}
+            amount={view.claimable}
             disabled={!isBeneficiary}
             onSettled={refetch}
           />
@@ -464,129 +427,32 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
         <CardHeader>
           <CardTitle>Reclaim</CardTitle>
           <CardDescription>
-            After the deadline, the sponsor can reclaim USDC still locked in
-            incomplete milestones. Completed-but-unclaimed amounts stay with the
-            beneficiary.
+            After the deadline, the sponsor reclaims USDC still locked in incomplete milestones.
+            Completed-but-unclaimed amounts stay for the beneficiary.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-2">
+          {!address && (
+            <p className="text-xs text-muted">Connect the sponsor wallet to reclaim.</p>
+          )}
+          {address && !isSponsor && (
+            <p className="text-xs text-muted">Only the sponsor can reclaim.</p>
+          )}
+          {address && isSponsor && view.reclaimable === 0n && (
+            <p className="text-xs text-muted">
+              {Number(view.deadline) * 1000 > Date.now()
+                ? "Deadline has not passed yet (or nothing is reclaimable)."
+                : "Nothing left to reclaim on incomplete milestones."}
+            </p>
+          )}
           <ReclaimButton
             campaignId={id}
-            amount={reclaimable}
-            disabled={!isSponsor || reclaimable === 0n}
+            amount={view.reclaimable}
+            disabled={!isSponsor || view.reclaimable === 0n}
             onSettled={refetch}
           />
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Activity</CardTitle>
-          <CardDescription>
-            Onchain events from this escrow (no indexer).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <CampaignTimeline campaignId={id} refreshKey={timelineKey} />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
-  return (
-    <div>
-      <p className="text-[10px] uppercase tracking-[0.16em] text-muted">{label}</p>
-      <p className={`mt-1 font-mono text-sm ${accent ? "text-accent" : ""}`}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function MilestoneRow({
-  index,
-  last,
-  milestone,
-  campaignId,
-  canComplete,
-  onSettled,
-}: {
-  index: number;
-  last: boolean;
-  milestone: Milestone;
-  campaignId: bigint;
-  canComplete: boolean;
-  onSettled: () => void;
-}) {
-  const status = milestone.reclaimed
-    ? "Reclaimed"
-    : milestone.claimed
-      ? "Claimed"
-      : milestone.completed
-        ? "Released"
-        : "Locked";
-  const evidenceHref = externalHref(milestone.evidenceURI);
-
-  return (
-    <div
-      className={`grid gap-3 py-4 sm:grid-cols-[2rem_1fr_auto] ${
-        last ? "" : "border-b border-dashed border-line"
-      }`}
-    >
-      <div className="flex flex-col items-center">
-        <span
-          className={`flex h-7 w-7 items-center justify-center rounded-full font-mono text-[11px] ${
-            milestone.completed
-              ? "bg-accent text-ink"
-              : "border border-line text-muted"
-          }`}
-        >
-          {index + 1}
-        </span>
-      </div>
-      <div className="min-w-0">
-        <p className="text-sm font-medium leading-snug">{milestone.description}</p>
-        <p className="mt-1 font-mono text-xs text-muted">
-          {formatUsdc(milestone.amount)} USDC · {status}
-        </p>
-        {milestone.evidenceURI && (
-          <p className="mt-1 text-xs">
-            {evidenceHref ? (
-              <a
-                href={evidenceHref}
-                target="_blank"
-                rel="noreferrer"
-                className="break-all text-accent hover:underline"
-              >
-                Evidence
-              </a>
-            ) : (
-              <span className="break-all font-mono text-muted">
-                {milestone.evidenceURI}
-              </span>
-            )}
-          </p>
-        )}
-      </div>
-      {canComplete ? (
-        <CompleteButton
-          campaignId={campaignId}
-          index={index}
-          onSettled={onSettled}
-        />
-      ) : (
-        <span className="pt-1 text-xs text-muted">{status}</span>
-      )}
     </div>
   );
 }
