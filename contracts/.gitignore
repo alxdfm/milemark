@@ -1,0 +1,22 @@
+cache/
+out/
+broadcast/*/31337/
+broadcast/**/dry-run/
+.env
+.DS_Store
+
+# Vendored deps: keep compile sources, drop upstream tests/docs
+lib/openzeppelin-contracts/test
+lib/openzeppelin-contracts/audits
+lib/openzeppelin-contracts/docs
+lib/openzeppelin-contracts/fv
+lib/openzeppelin-contracts/hardhat
+lib/openzeppelin-contracts/lib
+lib/openzeppelin-contracts/scripts
+lib/openzeppelin-contracts/.github
+lib/openzeppelin-contracts/.changeset
+lib/openzeppelin-contracts/.claude
+lib/openzeppelin-contracts/.husky
+lib/forge-std/test
+lib/forge-std/.github
+lib/forge-std/scripts
