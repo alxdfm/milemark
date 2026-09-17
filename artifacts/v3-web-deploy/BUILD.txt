@@ -1,0 +1,6 @@
+local production build: ok
+next: 16.3.5
+routes: / /create /campaign/[id] /demo /rpc
+demo: static (.next/server/app/demo.html)
+escrow: 0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC
+env file: .env.production

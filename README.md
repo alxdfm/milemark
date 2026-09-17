@@ -177,6 +177,18 @@ cd contracts && forge build
 python3 ../scripts/export-abi.py
 ```
 
+## Vercel (frontend)
+
+The Next.js app lives in **`web/`**. Production must use **Root Directory = `web`**. Deploying the git repo from the Origin root (no `package.json` there) yields a stale or empty Next app — `/demo` 404s even when v3 env vars are set.
+
+Public v3 defaults are in `web/.env.production`. Packaged source for `vercel deploy`: [`artifacts/v3-web-deploy.tgz`](artifacts/v3-web-deploy.tgz). Steps: [`artifacts/v3-web-deploy/WEB_DEPLOY.md`](artifacts/v3-web-deploy/WEB_DEPLOY.md).
+
+```bash
+cd web
+npx vercel link --yes --scope mile-mark --project milemark
+npx vercel deploy --prod --yes
+```
+
 ## Demo script for judges
 
 See [`docs/DEMO.md`](docs/DEMO.md) and the in-app kit at **`/demo`** (QR + copyable URLs + role cheat-sheet).

@@ -35,12 +35,9 @@ function readAddress(raw: string | undefined, fallback: Address): Address {
   return isHexAddress(value) ? value : fallback;
 }
 
-const defaultEscrow: Address =
-  LIVE_ESCROW_V3 !== ZERO_ADDRESS ? LIVE_ESCROW_V3 : ZERO_ADDRESS;
-
 export const ESCROW_ADDRESS = readAddress(
   process.env.NEXT_PUBLIC_ESCROW_ADDRESS,
-  defaultEscrow,
+  LIVE_ESCROW_V3,
 );
 
 export const USDC_ADDRESS = readAddress(
