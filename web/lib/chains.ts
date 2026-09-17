@@ -35,15 +35,25 @@ export const anvil = defineChain({
 
 export const milemarkChain = chainId === 31337 ? anvil : arbitrumSepolia;
 
-export const ZERO_ADDRESS =
-  "0x0000000000000000000000000000000000000000" as const;
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
 
-export const ESCROW_ADDRESS = (process.env.NEXT_PUBLIC_ESCROW_ADDRESS ??
-  ZERO_ADDRESS) as `0x${string}`;
+function readAddress(raw: string | undefined, fallback: `0x${string}`): `0x${string}` {
+  const value = (raw ?? "").trim();
+  return /^0x[a-fA-F0-9]{40}$/.test(value) ? (value as `0x${string}`) : fallback;
+}
+
+export { ZERO_ADDRESS };
+
+export const ESCROW_ADDRESS = readAddress(
+  process.env.NEXT_PUBLIC_ESCROW_ADDRESS,
+  ZERO_ADDRESS,
+);
 
 /** Circle testnet USDC on Arbitrum Sepolia. Override for MockERC20 on Anvil. */
-export const USDC_ADDRESS = (process.env.NEXT_PUBLIC_USDC_ADDRESS ??
-  "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d") as `0x${string}`;
+export const USDC_ADDRESS = readAddress(
+  process.env.NEXT_PUBLIC_USDC_ADDRESS,
+  "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+);
 
 export const USDC_DECIMALS = 6;
 
