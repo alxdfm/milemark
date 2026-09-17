@@ -91,6 +91,9 @@ export function DemoKit() {
           <p className="max-w-xl text-sm leading-6 text-muted">
             Create → attest to quorum → wait or dispute → claim → reclaim.
             Everything is onchain on Arbitrum Sepolia. No indexer, no offchain DB.
+            Featured id {DEMO_CAMPAIGN_ID} is a live 1-of-1, 60s window, 3 USDC
+            campaign (same wallet can be sponsor, attestor, and beneficiary). The
+            walkthrough below is how to fund a <em>new</em> 2-of-3 campaign.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">

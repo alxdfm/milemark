@@ -7,6 +7,10 @@ import {MilestoneEscrow} from "../src/MilestoneEscrow.sol";
 
 /// @notice Create a small v3 demo campaign on an already-deployed escrow.
 ///
+/// Live Sepolia campaign id `0` is a **hand-crafted** 1-of-1 (title
+/// "MM v3 Demo Quorum", 1+2 USDC, 60s window) — not this script's defaults.
+/// Running this script against the live v3 address mints the **next** id.
+///
 /// Env:
 ///   PRIVATE_KEY          — sponsor key (must hold + approve USDC)
 ///   ESCROW_ADDRESS       — MilestoneEscrow v3
