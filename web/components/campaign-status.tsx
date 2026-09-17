@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { milestoneEscrowAbi } from "@/lib/abi";
 import {
@@ -15,6 +15,7 @@ import {
   formatUnix,
   formatUsdc,
   shortAddress,
+  toBigInt,
 } from "@/lib/format";
 import { CampaignLookup } from "@/components/campaign-lookup";
 import { CampaignTimeline } from "@/components/campaign-timeline";
@@ -37,6 +38,59 @@ type Milestone = {
   claimed: boolean;
   reclaimed: boolean;
 };
+
+type CampaignView = {
+  sponsor: `0x${string}`;
+  beneficiary: `0x${string}`;
+  title: string;
+  briefURI: string;
+  deadline: bigint;
+  milestoneCount: bigint;
+  createdAt: bigint;
+  claimable: bigint;
+  reclaimable: bigint;
+};
+
+function asRecord(raw: unknown): (Record<string, unknown> & unknown[]) | null {
+  if (!raw || typeof raw !== "object") return null;
+  return raw as Record<string, unknown> & unknown[];
+}
+
+function parseCampaignView(raw: unknown): CampaignView | null {
+  let data = raw;
+  if (data && typeof data === "object" && "view_" in data) {
+    data = (data as { view_: unknown }).view_;
+  }
+  const r = asRecord(data);
+  if (!r) return null;
+  const sponsor = (r.sponsor ?? r[0]) as `0x${string}` | undefined;
+  const beneficiary = (r.beneficiary ?? r[1]) as `0x${string}` | undefined;
+  if (!sponsor || !beneficiary) return null;
+  return {
+    sponsor,
+    beneficiary,
+    title: String(r.title ?? r[2] ?? ""),
+    briefURI: String(r.briefURI ?? r[3] ?? ""),
+    deadline: toBigInt(r.deadline ?? r[4]) ?? 0n,
+    milestoneCount: toBigInt(r.milestoneCount ?? r[5]) ?? 0n,
+    createdAt: toBigInt(r.createdAt ?? r[6]) ?? 0n,
+    claimable: toBigInt(r.claimable ?? r[7]) ?? 0n,
+    reclaimable: toBigInt(r.reclaimable ?? r[8]) ?? 0n,
+  };
+}
+
+function asMilestone(raw: unknown): Milestone | null {
+  const r = asRecord(raw);
+  if (!r) return null;
+  const description = (r.description ?? r[0]) as string | undefined;
+  const evidenceURI = String(r.evidenceURI ?? r[1] ?? "");
+  const amount = toBigInt(r.amount ?? r[2]);
+  const completed = Boolean(r.completed ?? r[3]);
+  const claimed = Boolean(r.claimed ?? r[4]);
+  const reclaimed = Boolean(r.reclaimed ?? r[5]);
+  if (description === undefined || amount === undefined) return null;
+  return { description, evidenceURI, amount, completed, claimed, reclaimed };
+}
 
 function parseId(raw: string): bigint | null {
   if (!/^\d+$/.test(raw.trim())) return null;
@@ -125,6 +179,15 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     setTimelineKey((k) => k + 1);
   }, [refetchCampaign, refetchMilestones, refetchAttestors]);
 
+  const view = useMemo(() => parseCampaignView(campaign.data), [campaign.data]);
+
+  const list = useMemo(() => {
+    const raw = (milestones.data ?? []) as unknown[];
+    return raw.map(asMilestone).filter((m): m is Milestone => m !== null);
+  }, [milestones.data]);
+
+  const attestorList = (attestors.data ?? []) as readonly `0x${string}`[];
+
   if (!isEscrowConfigured) {
     return (
       <Card>
@@ -174,7 +237,7 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     );
   }
 
-  if (campaign.isError || milestones.isError || !campaign.data) {
+  if (campaign.isError || milestones.isError || !view) {
     return (
       <Card>
         <CardHeader>
@@ -194,13 +257,10 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     );
   }
 
-  const view = campaign.data;
   const sponsor = view.sponsor;
   const beneficiary = view.beneficiary;
   const claimable = view.claimable;
   const reclaimable = view.reclaimable;
-  const list = (milestones.data ?? []) as readonly Milestone[];
-  const attestorList = (attestors.data ?? []) as readonly `0x${string}`[];
   const total = list.reduce((s, m) => s + m.amount, 0n);
   const released = list
     .filter((m) => m.completed)

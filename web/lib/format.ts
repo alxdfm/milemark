@@ -1,16 +1,25 @@
 import { formatUnits } from "viem";
 import { USDC_DECIMALS } from "./chains";
 
-export function formatUsdc(amount: bigint, digits = 2): string {
-  const raw = formatUnits(amount, USDC_DECIMALS);
-  const [whole, frac = ""] = raw.split(".");
-  if (digits === 0) return whole;
-  const trimmed = (frac + "000000").slice(0, digits);
-  return `${whole}.${trimmed}`;
+export function formatUsdc(
+  amount: bigint | number | null | undefined,
+  digits = 2,
+): string {
+  if (amount === undefined || amount === null) return "—";
+  try {
+    const value = typeof amount === "bigint" ? amount : BigInt(amount);
+    const raw = formatUnits(value, USDC_DECIMALS);
+    const [whole, frac = ""] = raw.split(".");
+    if (digits === 0) return whole;
+    const trimmed = (frac + "000000").slice(0, digits);
+    return `${whole}.${trimmed}`;
+  } catch {
+    return "—";
+  }
 }
 
-export function shortAddress(address: string): string {
-  if (address.length < 12) return address;
+export function shortAddress(address: string | null | undefined): string {
+  if (!address || address.length < 12) return address || "—";
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
@@ -27,8 +36,13 @@ export function externalHref(uri: string): string | null {
   return null;
 }
 
-export function formatCountdown(deadlineSec: bigint, nowSec: number): string {
+export function formatCountdown(
+  deadlineSec: bigint | number | null | undefined,
+  nowSec: number,
+): string {
+  if (deadlineSec === undefined || deadlineSec === null) return "—";
   const end = Number(deadlineSec);
+  if (!Number.isFinite(end) || end <= 0) return "—";
   const delta = end - nowSec;
   if (delta <= 0) return "Deadline passed";
   const d = Math.floor(delta / 86400);
@@ -39,8 +53,24 @@ export function formatCountdown(deadlineSec: bigint, nowSec: number): string {
   return `${Math.max(m, 0)}m remaining`;
 }
 
-export function formatUnix(ts: bigint): string {
-  return new Date(Number(ts) * 1000).toLocaleString();
+export function formatUnix(ts: bigint | number | null | undefined): string {
+  if (ts === undefined || ts === null) return "—";
+  const n = Number(ts);
+  if (!Number.isFinite(n) || n <= 0) return "—";
+  return new Date(n * 1000).toLocaleString();
+}
+
+export function toBigInt(value: unknown): bigint | undefined {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return BigInt(Math.trunc(value));
+  if (typeof value === "string" && value !== "") {
+    try {
+      return BigInt(value);
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
 }
 
 export function friendlyError(err: unknown): string {
