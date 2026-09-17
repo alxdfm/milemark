@@ -17,6 +17,11 @@ import {
   isEscrowConfigured,
 } from "@/lib/chains";
 import { friendlyError, formatUsdc } from "@/lib/format";
+import {
+  CAMPAIGN_TEMPLATES,
+  deadlineDaysFromNow,
+  type MilestoneDraft,
+} from "@/lib/templates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,16 +34,19 @@ import {
 } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
 
-type Row = { description: string; amount: string };
-
-const emptyRow = (): Row => ({ description: "", amount: "" });
+const emptyRow = (): MilestoneDraft => ({ description: "", amount: "" });
 
 export function CreateCampaignForm() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
+  const [title, setTitle] = useState("Hackathon prize");
+  const [briefURI, setBriefURI] = useState("");
   const [beneficiary, setBeneficiary] = useState("");
-  const [attestor, setAttestor] = useState("");
-  const [rows, setRows] = useState<Row[]>([
+  const [attestors, setAttestors] = useState<string[]>([""]);
+  const [deadlineLocal, setDeadlineLocal] = useState(() =>
+    deadlineDaysFromNow(30),
+  );
+  const [rows, setRows] = useState<MilestoneDraft[]>([
     { description: "Ship public demo", amount: "100" },
     { description: "Pass review / audit notes", amount: "250" },
     { description: "Handoff + docs", amount: "150" },
@@ -82,8 +90,9 @@ export function CreateCampaignForm() {
       }
     }
     const total = amounts.reduce((s, a) => (a > 0n ? s + a : s), 0n);
-    return { descriptions, amounts, total };
-  }, [rows]);
+    const deadlineUnix = Math.floor(new Date(deadlineLocal).getTime() / 1000);
+    return { descriptions, amounts, total, deadlineUnix };
+  }, [rows, deadlineLocal]);
 
   const needsApproval = (allowance ?? 0n) < parsed.total;
   const waiting = isPending || receipt.isLoading;
@@ -109,15 +118,56 @@ export function CreateCampaignForm() {
     }
   }, [receipt.isSuccess, receipt.data, action, refetchAllowance, reset, router]);
 
-  function validate(): { beneficiary: Address; attestor: Address } | null {
+  function applyTemplate(id: string) {
+    const template = CAMPAIGN_TEMPLATES.find((t) => t.id === id);
+    if (!template) return;
+    setTitle(template.title);
+    setBriefURI(template.briefURI);
+    setDeadlineLocal(deadlineDaysFromNow(template.days));
+    setRows(template.rows.map((r) => ({ ...r })));
+  }
+
+  function validate(): {
+    beneficiary: Address;
+    attestors: Address[];
+  } | null {
     setLocalError(null);
     reset();
     if (!isEscrowConfigured) {
       setLocalError("Set NEXT_PUBLIC_ESCROW_ADDRESS in web/.env.local first.");
       return null;
     }
-    if (!isAddress(beneficiary) || !isAddress(attestor)) {
-      setLocalError("Beneficiary and attestor must be valid addresses.");
+    if (!title.trim()) {
+      setLocalError("Give the campaign a title.");
+      return null;
+    }
+    if (!isAddress(beneficiary)) {
+      setLocalError("Beneficiary must be a valid address.");
+      return null;
+    }
+    const attestorList = attestors.map((a) => a.trim()).filter(Boolean);
+    if (attestorList.length === 0) {
+      setLocalError("Add at least one attestor.");
+      return null;
+    }
+    const unique: Address[] = [];
+    const seen = new Set<string>();
+    for (const raw of attestorList) {
+      if (!isAddress(raw)) {
+        setLocalError(`Attestor ${raw} is not a valid address.`);
+        return null;
+      }
+      const key = raw.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(raw);
+    }
+    if (!Number.isFinite(parsed.deadlineUnix) || parsed.deadlineUnix <= 0) {
+      setLocalError("Pick a valid deadline.");
+      return null;
+    }
+    if (parsed.deadlineUnix <= Math.floor(Date.now() / 1000)) {
+      setLocalError("Deadline must be in the future.");
       return null;
     }
     if (rows.length === 0) {
@@ -134,7 +184,7 @@ export function CreateCampaignForm() {
         return null;
       }
     }
-    return { beneficiary, attestor };
+    return { beneficiary, attestors: unique };
   }
 
   function onApprove() {
@@ -156,7 +206,15 @@ export function CreateCampaignForm() {
       address: ESCROW_ADDRESS,
       abi: milestoneEscrowAbi,
       functionName: "createCampaign",
-      args: [ok.beneficiary, ok.attestor, parsed.descriptions, parsed.amounts],
+      args: [
+        ok.beneficiary,
+        ok.attestors,
+        title.trim(),
+        briefURI.trim(),
+        BigInt(parsed.deadlineUnix),
+        parsed.descriptions,
+        parsed.amounts,
+      ],
     });
   }
 
@@ -167,12 +225,29 @@ export function CreateCampaignForm() {
       <CardHeader>
         <CardTitle>Lock a campaign</CardTitle>
         <CardDescription>
-          You are the sponsor. USDC is pulled in this transaction after you
-          approve the total. The attestor can complete milestones in any order;
-          the beneficiary claims released amounts.
+          You are the sponsor. After approve, create pulls the total USDC.
+          Any listed attestor can complete miles (1-of-n). After the deadline
+          you can reclaim amounts still locked on incomplete miles.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <Label>Templates</Label>
+          <div className="flex flex-wrap gap-2">
+            {CAMPAIGN_TEMPLATES.map((template) => (
+              <Button
+                key={template.id}
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => applyTemplate(template.id)}
+              >
+                {template.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {!isConnected && (
           <p className="rounded-md border border-line bg-ink px-3 py-2 text-sm text-muted">
             Connect a wallet on the configured chain to approve USDC and create
@@ -181,6 +256,25 @@ export function CreateCampaignForm() {
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2 sm:col-span-2">
+            <Label htmlFor="title">Title</Label>
+            <Input
+              id="title"
+              placeholder="Campaign title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2 sm:col-span-2">
+            <Label htmlFor="brief">Brief URI</Label>
+            <Input
+              id="brief"
+              placeholder="https://… or ipfs://… (optional)"
+              value={briefURI}
+              onChange={(e) => setBriefURI(e.target.value)}
+              spellCheck={false}
+            />
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="beneficiary">Beneficiary</Label>
             <Input
@@ -201,24 +295,68 @@ export function CreateCampaignForm() {
             )}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="attestor">Attestor</Label>
+            <Label htmlFor="deadline">Deadline</Label>
             <Input
-              id="attestor"
-              placeholder="0x… marks milestones complete"
-              value={attestor}
-              onChange={(e) => setAttestor(e.target.value)}
-              spellCheck={false}
+              id="deadline"
+              type="datetime-local"
+              value={deadlineLocal}
+              onChange={(e) => setDeadlineLocal(e.target.value)}
             />
-            {address && (
-              <button
-                type="button"
-                className="justify-self-start text-xs text-accent hover:underline"
-                onClick={() => setAttestor(address)}
-              >
-                Use my wallet
-              </button>
-            )}
           </div>
+        </div>
+
+        <div className="grid gap-3">
+          <div className="flex items-center justify-between">
+            <Label>Attestors (1-of-n)</Label>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setAttestors((a) => [...a, ""])}
+            >
+              <Plus />
+              Add
+            </Button>
+          </div>
+          {attestors.map((value, i) => (
+            <div key={i} className="grid grid-cols-[1fr_2.5rem] items-center gap-2">
+              <Input
+                placeholder="0x… can mark miles complete"
+                value={value}
+                onChange={(e) =>
+                  setAttestors((prev) =>
+                    prev.map((a, j) => (j === i ? e.target.value : a)),
+                  )
+                }
+                spellCheck={false}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Remove attestor"
+                disabled={attestors.length === 1}
+                onClick={() =>
+                  setAttestors((prev) => prev.filter((_, j) => j !== i))
+                }
+              >
+                <Trash2 />
+              </Button>
+            </div>
+          ))}
+          {address && (
+            <button
+              type="button"
+              className="justify-self-start text-xs text-accent hover:underline"
+              onClick={() =>
+                setAttestors((prev) =>
+                  prev[0] === "" ? [address, ...prev.slice(1)] : [address, ...prev],
+                )
+              }
+            >
+              Use my wallet as attestor
+            </button>
+          )}
         </div>
 
         <div className="grid gap-3">

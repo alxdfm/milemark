@@ -8,16 +8,17 @@ export default function HomePage() {
       <section className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
         <div className="flex flex-col gap-6">
           <p className="font-mono text-xs uppercase tracking-[0.28em] text-accent">
-            Arbitrum Sepolia · milestone escrow
+            Arbitrum Sepolia · milestone escrow v2
           </p>
           <h1 className="font-display text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">
             Lock USDC to the work.
             <span className="block text-muted">Release it by the mile.</span>
           </h1>
           <p className="max-w-xl text-base leading-7 text-muted sm:text-lg">
-            Sponsors fund a campaign. An attestor marks each milestone complete.
-            The beneficiary claims only what has been released. No invoices, no
-            escrow agent, no Stylus — one Solidity contract on Arbitrum.
+            Sponsors fund a titled campaign with a deadline. Any listed attestor
+            can mark a mile complete (1-of-n) and attach evidence. The
+            beneficiary claims released USDC. After the deadline the sponsor
+            reclaims what is still locked.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
@@ -39,31 +40,36 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="how" className="grid gap-4 md:grid-cols-3">
+      <section id="how" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Step
           n="01"
           title="Sponsor locks"
-          body="Approve USDC, then createCampaign. The total of every milestone amount is pulled in the same flow and sits in the escrow."
+          body="Approve USDC, then createCampaign with title, brief URI, attestor set, deadline, and mile amounts."
         />
         <Step
           n="02"
           title="Attestor marks"
-          body="completeMilestone is attestor-only. Completion is any-order so an independent workstream is not blocked by an earlier unfinished one."
+          body="Any listed attestor calls completeMilestone with optional evidence. Any-order — a later mile can finish first."
         />
         <Step
           n="03"
           title="Beneficiary claims"
-          body="claim pays the sum of completed, unclaimed milestones. A second claim with nothing new reverts. No one else can withdraw."
+          body="claim pays completed, unclaimed miles. A second claim with nothing new reverts."
+        />
+        <Step
+          n="04"
+          title="Sponsor reclaims"
+          body="After the deadline, reclaim pulls USDC still sitting on incomplete miles. Released miles stay with the beneficiary."
         />
       </section>
 
       <section className="rounded-xl border border-dashed border-line bg-surface/60 p-6 sm:p-8">
-        <h2 className="font-display text-2xl font-semibold">Built for a 3-week MVP</h2>
+        <h2 className="font-display text-2xl font-semibold">v2 MVP</h2>
         <ul className="mt-4 grid gap-2 text-sm text-muted sm:grid-cols-2">
-          <li>USDC (6 decimals) via OpenZeppelin SafeERC20</li>
-          <li>ReentrancyGuard on create and claim</li>
-          <li>Custom errors + CampaignCreated / MilestoneCompleted / Claimed</li>
-          <li>No oracles, no DAO, no indexer</li>
+          <li>Campaign title + brief URI</li>
+          <li>1-of-n attestor set</li>
+          <li>Deadline + sponsor reclaim of incomplete miles</li>
+          <li>Evidence URI on complete; activity from contract logs</li>
         </ul>
       </section>
     </main>

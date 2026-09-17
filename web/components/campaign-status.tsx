@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { milestoneEscrowAbi } from "@/lib/abi";
 import {
@@ -9,9 +9,18 @@ import {
   explorerAddress,
   isEscrowConfigured,
 } from "@/lib/chains";
-import { formatUsdc, shortAddress } from "@/lib/format";
+import {
+  externalHref,
+  formatCountdown,
+  formatUnix,
+  formatUsdc,
+  shortAddress,
+} from "@/lib/format";
+import { CampaignLookup } from "@/components/campaign-lookup";
+import { CampaignTimeline } from "@/components/campaign-timeline";
 import { ClaimButton } from "@/components/claim-button";
 import { CompleteButton } from "@/components/complete-button";
+import { ReclaimButton } from "@/components/reclaim-button";
 import {
   Card,
   CardContent,
@@ -19,13 +28,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CampaignLookup } from "@/components/campaign-lookup";
 
 type Milestone = {
   description: string;
+  evidenceURI: string;
   amount: bigint;
   completed: boolean;
   claimed: boolean;
+  reclaimed: boolean;
 };
 
 function parseId(raw: string): bigint | null {
@@ -37,13 +47,7 @@ function parseId(raw: string): bigint | null {
   }
 }
 
-function RoleChip({
-  label,
-  mine,
-}: {
-  label: string;
-  mine: boolean;
-}) {
+function RoleChip({ label, mine }: { label: string; mine: boolean }) {
   return (
     <span
       className={
@@ -58,45 +62,34 @@ function RoleChip({
   );
 }
 
-function AddressRow({
-  label,
-  address,
-  mine,
-  role,
-}: {
-  label: string;
-  address: `0x${string}`;
-  mine: boolean;
-  role: string;
-}) {
+function AddressLink({ address }: { address: `0x${string}` }) {
   const href = explorerAddress(address);
-  return (
-    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-xs uppercase tracking-[0.14em] text-muted">
-          {label}
-        </span>
-        <RoleChip label={role} mine={mine} />
-      </div>
-      {href ? (
-        <a
-          href={href}
-          target="_blank"
-          rel="noreferrer"
-          className="font-mono text-sm text-foreground hover:text-accent"
-        >
-          {shortAddress(address)}
-        </a>
-      ) : (
-        <span className="font-mono text-sm">{shortAddress(address)}</span>
-      )}
-    </div>
-  );
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className="font-mono text-sm text-foreground hover:text-accent"
+      >
+        {shortAddress(address)}
+      </a>
+    );
+  }
+  return <span className="font-mono text-sm">{shortAddress(address)}</span>;
 }
 
 export function CampaignStatus({ campaignId }: { campaignId: string }) {
   const id = parseId(campaignId);
   const { address } = useAccount();
+  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000));
+  const [copied, setCopied] = useState(false);
+  const [timelineKey, setTimelineKey] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 15_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const campaign = useReadContract({
     address: ESCROW_ADDRESS,
@@ -114,12 +107,23 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     query: { enabled: id !== null && isEscrowConfigured },
   });
 
+  const attestors = useReadContract({
+    address: ESCROW_ADDRESS,
+    abi: milestoneEscrowAbi,
+    functionName: "getAttestors",
+    args: id !== null ? [id] : undefined,
+    query: { enabled: id !== null && isEscrowConfigured },
+  });
+
   const refetchCampaign = campaign.refetch;
   const refetchMilestones = milestones.refetch;
+  const refetchAttestors = attestors.refetch;
   const refetch = useCallback(() => {
     void refetchCampaign();
     void refetchMilestones();
-  }, [refetchCampaign, refetchMilestones]);
+    void refetchAttestors();
+    setTimelineKey((k) => k + 1);
+  }, [refetchCampaign, refetchMilestones, refetchAttestors]);
 
   if (!isEscrowConfigured) {
     return (
@@ -127,7 +131,8 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
         <CardHeader>
           <CardTitle>Escrow not configured</CardTitle>
           <CardDescription>
-            Set NEXT_PUBLIC_ESCROW_ADDRESS after deploying MilestoneEscrow.
+            Deploy MilestoneEscrow v2 and set NEXT_PUBLIC_ESCROW_ADDRESS. The
+            v1 address is obsolete after the ABI break.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -151,7 +156,7 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     );
   }
 
-  if (campaign.isLoading || milestones.isLoading) {
+  if (campaign.isLoading || milestones.isLoading || attestors.isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -189,60 +194,160 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
     );
   }
 
-  const sponsor = campaign.data[0];
-  const beneficiary = campaign.data[1];
-  const attestor = campaign.data[2];
-  const claimable = campaign.data[5];
+  const view = campaign.data;
+  const sponsor = view.sponsor;
+  const beneficiary = view.beneficiary;
+  const claimable = view.claimable;
+  const reclaimable = view.reclaimable;
   const list = (milestones.data ?? []) as readonly Milestone[];
+  const attestorList = (attestors.data ?? []) as readonly `0x${string}`[];
   const total = list.reduce((s, m) => s + m.amount, 0n);
   const released = list
     .filter((m) => m.completed)
     .reduce((s, m) => s + m.amount, 0n);
   const paid = list.filter((m) => m.claimed).reduce((s, m) => s + m.amount, 0n);
 
-  const isAttestor =
-    !!address && address.toLowerCase() === attestor.toLowerCase();
-  const isBeneficiary =
-    !!address && address.toLowerCase() === beneficiary.toLowerCase();
   const isSponsor =
     !!address && address.toLowerCase() === sponsor.toLowerCase();
+  const isBeneficiary =
+    !!address && address.toLowerCase() === beneficiary.toLowerCase();
+  const isAttestor =
+    !!address &&
+    attestorList.some((a) => a.toLowerCase() === address.toLowerCase());
+  const roleLabel = !address
+    ? "Viewer"
+    : isSponsor
+      ? "Sponsor"
+      : isAttestor
+        ? "Attestor"
+        : isBeneficiary
+          ? "Beneficiary"
+          : "Other";
+
+  const briefHref = externalHref(view.briefURI);
+  const escrowHref = explorerAddress(ESCROW_ADDRESS);
+  const pastDeadline = nowSec > Number(view.deadline);
+  const displayTitle = view.title.trim() || `Campaign ${id.toString()}`;
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted">
                 Campaign {id.toString()}
               </p>
-              <CardTitle className="mt-1">Milestone escrow</CardTitle>
+              <CardTitle className="mt-1 break-words">{displayTitle}</CardTitle>
               <CardDescription className="mt-2">
                 {list.length} milestone{list.length === 1 ? "" : "s"} ·{" "}
                 {formatUsdc(total)} USDC locked
               </CardDescription>
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <RoleChip label={roleLabel} mine={Boolean(address)} />
+              <button
+                type="button"
+                onClick={() => void copyLink()}
+                className="rounded-md border border-line px-2.5 py-1 text-xs text-muted hover:text-foreground"
+              >
+                {copied ? "Copied" : "Copy link"}
+              </button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <AddressRow
-            label="Sponsor"
-            address={sponsor}
-            mine={isSponsor}
-            role="funds"
-          />
-          <AddressRow
-            label="Attestor"
-            address={attestor}
-            mine={isAttestor}
-            role="attests"
-          />
-          <AddressRow
-            label="Beneficiary"
-            address={beneficiary}
-            mine={isBeneficiary}
-            role="claims"
-          />
+          <div className="flex flex-wrap gap-2">
+            {isSponsor && <RoleChip label="Sponsor" mine />}
+            {isAttestor && <RoleChip label="Attestor" mine />}
+            {isBeneficiary && <RoleChip label="Beneficiary" mine />}
+            {address && !isSponsor && !isAttestor && !isBeneficiary && (
+              <RoleChip label="Other" mine={false} />
+            )}
+          </div>
+
+          {view.briefURI && (
+            <p className="text-sm">
+              <span className="mr-2 text-xs uppercase tracking-[0.14em] text-muted">
+                Brief
+              </span>
+              {briefHref ? (
+                <a
+                  href={briefHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="break-all text-accent hover:underline"
+                >
+                  {view.briefURI}
+                </a>
+              ) : (
+                <span className="break-all font-mono text-xs">{view.briefURI}</span>
+              )}
+            </p>
+          )}
+
+          <div className="rounded-lg border border-line bg-ink px-4 py-3">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-muted">
+              Deadline
+            </p>
+            <p className="mt-1 text-sm">
+              {formatCountdown(view.deadline, nowSec)}
+            </p>
+            <p className="mt-0.5 font-mono text-xs text-muted">
+              {formatUnix(view.deadline)}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs uppercase tracking-[0.14em] text-muted">
+                Sponsor
+              </span>
+              <AddressLink address={sponsor} />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs uppercase tracking-[0.14em] text-muted">
+                Beneficiary
+              </span>
+              <AddressLink address={beneficiary} />
+            </div>
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+              <span className="text-xs uppercase tracking-[0.14em] text-muted">
+                Attestors
+              </span>
+              <div className="flex flex-col items-end gap-1">
+                {attestorList.map((a) => (
+                  <AddressLink key={a} address={a} />
+                ))}
+              </div>
+            </div>
+            {escrowHref && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs uppercase tracking-[0.14em] text-muted">
+                  Escrow
+                </span>
+                <a
+                  href={escrowHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-accent hover:underline"
+                >
+                  Arbiscan
+                </a>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-3 gap-2 rounded-lg border border-line bg-ink p-3 text-center">
             <Stat label="Released" value={formatUsdc(released)} />
             <Stat label="Claimable" value={formatUsdc(claimable)} accent />
@@ -255,8 +360,8 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
         <CardHeader>
           <CardTitle>Milestones</CardTitle>
           <CardDescription>
-            Completion is any-order: the attestor may mark a later milestone
-            before an earlier one.
+            Completion is any-order. Attestors may attach an evidence URI when
+            they mark a mile complete.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-0">
@@ -270,7 +375,7 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
               last={i === list.length - 1}
               milestone={m}
               campaignId={id}
-              canComplete={isAttestor && !m.completed}
+              canComplete={isAttestor && !m.completed && !m.reclaimed}
               onSettled={refetch}
             />
           ))}
@@ -293,6 +398,37 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
             disabled={!isBeneficiary}
             onSettled={refetch}
           />
+        </CardContent>
+      </Card>
+
+      {isSponsor && pastDeadline && reclaimable > 0n && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Reclaim</CardTitle>
+            <CardDescription>
+              Deadline has passed. Pull USDC still locked on incomplete miles.
+              Completed-but-unclaimed amounts stay with the beneficiary.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ReclaimButton
+              campaignId={id}
+              amount={reclaimable}
+              onSettled={refetch}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Activity</CardTitle>
+          <CardDescription>
+            Onchain events from this escrow (no indexer).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CampaignTimeline campaignId={id} refreshKey={timelineKey} />
         </CardContent>
       </Card>
     </div>
@@ -333,15 +469,18 @@ function MilestoneRow({
   canComplete: boolean;
   onSettled: () => void;
 }) {
-  const status = milestone.claimed
-    ? "Claimed"
-    : milestone.completed
-      ? "Released"
-      : "Locked";
+  const status = milestone.reclaimed
+    ? "Reclaimed"
+    : milestone.claimed
+      ? "Claimed"
+      : milestone.completed
+        ? "Released"
+        : "Locked";
+  const evidenceHref = externalHref(milestone.evidenceURI);
 
   return (
     <div
-      className={`grid grid-cols-[2rem_1fr_auto] items-start gap-3 py-4 ${
+      className={`grid gap-3 py-4 sm:grid-cols-[2rem_1fr_auto] ${
         last ? "" : "border-b border-dashed border-line"
       }`}
     >
@@ -361,6 +500,24 @@ function MilestoneRow({
         <p className="mt-1 font-mono text-xs text-muted">
           {formatUsdc(milestone.amount)} USDC · {status}
         </p>
+        {milestone.evidenceURI && (
+          <p className="mt-1 text-xs">
+            {evidenceHref ? (
+              <a
+                href={evidenceHref}
+                target="_blank"
+                rel="noreferrer"
+                className="break-all text-accent hover:underline"
+              >
+                Evidence
+              </a>
+            ) : (
+              <span className="break-all font-mono text-muted">
+                {milestone.evidenceURI}
+              </span>
+            )}
+          </p>
+        )}
       </div>
       {canComplete ? (
         <CompleteButton

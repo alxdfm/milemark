@@ -5,7 +5,8 @@ import {Script, console} from "forge-std/Script.sol";
 import {MilestoneEscrow} from "../src/MilestoneEscrow.sol";
 import {MockERC20} from "../src/mocks/MockERC20.sol";
 
-/// @notice Deploy MilestoneEscrow to Anvil or Arbitrum Sepolia.
+/// @notice Deploy MilestoneEscrow v2 to Anvil or Arbitrum Sepolia.
+///         v2 ABI is incompatible with v1 (0x72b474DB34268281CD10db655cc1517C33973049).
 ///
 /// Env:
 ///   PRIVATE_KEY          — deployer key (never commit this)

@@ -1,20 +1,21 @@
 # MileMark
 
-Onchain milestone escrow for the **Arbitrum Open House Singapore Online Buildathon**.
+Onchain milestone escrow for the **Arbitrum Open House Singapore Online Buildathon**. **v2** ABI.
 
-Sponsors lock USDC into a campaign with ordered milestones. An attestor marks work complete. The beneficiary claims released USDC. One contract, three roles, no oracle, no DAO, no Stylus.
+Sponsors lock USDC into a titled campaign with ordered milestones, a 1-of-n attestor set, and a deadline. Any listed attestor marks work complete (optional evidence URI). The beneficiary claims released USDC. After the deadline the sponsor reclaims amounts still locked on incomplete miles.
 
 ## Problem
 
-Builder grants, hackathon prizes, and small retainers still settle on trust or a human escrow agent. Invoices lag the work. A missed milestone either blocks the next payment or dumps the whole purse. MileMark makes the split explicit on Arbitrum: funds sit in the contract until an attestor says a mile is done.
+Builder grants, hackathon prizes, and small retainers still settle on trust or a human escrow agent. Invoices lag the work. A missed milestone either blocks the next payment or dumps the whole purse. MileMark makes the split explicit on Arbitrum: funds sit in the contract until an attestor says a mile is done — and unfinished miles can return to the sponsor when time is up.
 
 ## How it works
 
-1. **Sponsor** approves USDC and calls `createCampaign(beneficiary, attestor, descriptions, amounts)`. The sum of `amounts` is pulled in that transaction.
-2. **Attestor** calls `completeMilestone(campaignId, index)`. Completion is **any-order** — index `2` may complete before index `0`. Descriptions stay ordered for humans; the contract does not force sequence so an independent workstream is not blocked.
+1. **Sponsor** approves USDC and calls `createCampaign(beneficiary, attestors, title, briefURI, deadline, descriptions, amounts)`. The sum of `amounts` is pulled in that transaction.
+2. **Attestor set (1-of-n)** — any address in `attestors` may call `completeMilestone(campaignId, index, evidenceURI)`. Completion is **any-order**. Empty evidence is allowed.
 3. **Beneficiary** calls `claim(campaignId)` and receives the sum of completed, unclaimed milestones. A second claim with nothing new reverts (`NothingToClaim`).
+4. **After `block.timestamp > deadline`**, the sponsor calls `reclaim(campaignId)` and receives USDC still sitting on **incomplete** miles. Completed-but-unclaimed amounts stay claimable by the beneficiary. Emit `Reclaimed`.
 
-Events: `CampaignCreated`, `MilestoneCompleted`, `Claimed`.
+Events: `CampaignCreated`, `MilestoneCompleted`, `Claimed`, `Reclaimed`.
 
 ## Architecture
 
@@ -34,7 +35,7 @@ milemark/
 └── SUBMISSION.md
 ```
 
-No indexer. The UI reads `getCampaign` / `getMilestones` directly.
+No indexer. The UI reads `getCampaign` / `getMilestones` / `getAttestors` and renders a timeline from `getContractEvents` on the escrow.
 
 **USDC**
 
@@ -45,14 +46,15 @@ No indexer. The UI reads `getCampaign` / `getMilestones` directly.
 
 ## Deployed address
 
+v2 **breaks the v1 ABI**. The previous Sepolia deploy is obsolete and must not be used with this frontend:
+
 | Item | Value |
 |---|---|
 | Network | Arbitrum Sepolia (421614) |
-| MilestoneEscrow | [`0x72b474DB34268281CD10db655cc1517C33973049`](https://sepolia.arbiscan.io/address/0x72b474DB34268281CD10db655cc1517C33973049) |
+| MilestoneEscrow v2 | **TODO — redeploy required** |
+| Obsolete v1 (do not use) | `0x72b474DB34268281CD10db655cc1517C33973049` |
 | USDC (Circle testnet) | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
-| Deployer | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4` |
-| Deploy tx | [`0xd1ecf3062cf3ab3bf34cbaf7429ceb214a7c75416d3289709864c950cf548057`](https://sepolia.arbiscan.io/tx/0xd1ecf3062cf3ab3bf34cbaf7429ceb214a7c75416d3289709864c950cf548057) |
-| Explorer | https://sepolia.arbiscan.io/address/0x72b474DB34268281CD10db655cc1517C33973049 |
+| Explorer | https://sepolia.arbiscan.io |
 | Demo video | **TODO** |
 
 ## Local setup
@@ -76,7 +78,7 @@ npm run dev          # http://localhost:43147
 npm run typecheck
 ```
 
-`web/.env.example` already points at the Sepolia escrow. Copy it to `.env.local`, then override RPC / chain / addresses for Anvil.
+`web/.env.example` leaves `NEXT_PUBLIC_ESCROW_ADDRESS` empty until you deploy v2. Copy it to `.env.local`, then fill the new address (or Anvil addresses).
 
 ### Full local demo (Anvil)
 
@@ -120,6 +122,8 @@ Import Anvil account 0 into MetaMask (or use Rabby), add network **Anvil** (chai
 
 ## Deploy to Arbitrum Sepolia
 
+v2 needs a **new** broadcast. Do not point the UI at the v1 address.
+
 1. Get Sepolia ETH on Arbitrum ([bridge](https://bridge.arbitrum.io/) or a faucet) and Circle testnet USDC ([Circle faucet](https://faucet.circle.com/)).
 2. Copy `contracts/.env.example` → `contracts/.env` and set `PRIVATE_KEY` (do not commit it) and `USDC_ADDRESS=0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`.
 3. Broadcast:
@@ -133,7 +137,7 @@ forge script script/Deploy.s.sol \
 ```
 
 4. Put the printed escrow address in `web/.env.local` as `NEXT_PUBLIC_ESCROW_ADDRESS`, keep `NEXT_PUBLIC_CHAIN_ID=421614`, restart `npm run dev`.
-5. The Sepolia address in this README is already live; only update the table if you redeploy.
+5. Paste the new address into this README’s TODO table.
 
 Regenerate the frontend ABI after any Solidity change:
 
@@ -142,31 +146,34 @@ cd contracts && forge build
 python3 ../scripts/export-abi.py
 ```
 
-## Demo script for judges (5 minutes)
+## Demo script for judges
 
-1. Open the app (Sepolia deploy or the Anvil flow above). Connect the **sponsor** wallet.
-2. **Create** — beneficiary = wallet B, attestor = wallet C (or the same wallet if you are walking through alone). Two milestones, e.g. `50` + `50` USDC. Approve, then create. Note the campaign id.
-3. Switch to the **attestor**. Open `/campaign/{id}`. Mark milestone 2 complete first (any-order). Mark milestone 1.
-4. Switch to the **beneficiary**. **Claim**. Wallet USDC increases by the released total. Claim again — it reverts.
-5. Optional: from a fourth wallet, try **Mark complete** — `NotAttestor`.
+1. Open the app (new v2 Sepolia deploy or the Anvil flow). Connect the **sponsor** wallet.
+2. **Create** — use a template (Hackathon / Retainer / Grant). Set beneficiary, one or two attestors, a short deadline if you will demo reclaim. Approve, then create. Note the campaign id and share the `/campaign/{id}` link.
+3. Switch to an **attestor**. Mark milestone 2 complete first (any-order) with an evidence URI (ipfs or https). Mark milestone 1 with empty evidence.
+4. Switch to the **beneficiary**. **Claim**. Wallet USDC increases. Claim again — it reverts.
+5. After the deadline (Anvil: `cast rpc evm_increaseTime 2592000 && cast rpc evm_mine`, or wait): connect the **sponsor** and **Reclaim** remaining incomplete miles. Completing a reclaimed mile reverts.
 
-Cast-only version of the same flow (replace addresses):
+Cast-only version (replace addresses; `DEADLINE` is unix seconds in the future):
 
 ```bash
-# approve + create (sponsor)
 cast send $USDC "approve(address,uint256)" $ESCROW 100000000 --private-key $SPONSOR --rpc-url $RPC
-cast send $ESCROW "createCampaign(address,address,string[],uint256[])" \
-  $BENEFICIARY $ATTESTOR '["Ship demo","Write docs"]' '[40000000,60000000]' \
+cast send $ESCROW "createCampaign(address,address[],string,string,uint64,string[],uint256[])" \
+  $BENEFICIARY "[$ATTESTOR]" "Demo" "ipfs://brief" $DEADLINE \
+  '["Ship demo","Write docs"]' '[40000000,60000000]' \
   --private-key $SPONSOR --rpc-url $RPC
 
-# attest (any order) + claim
-cast send $ESCROW "completeMilestone(uint256,uint256)" 0 1 --private-key $ATTESTOR --rpc-url $RPC
+cast send $ESCROW "completeMilestone(uint256,uint256,string)" 0 1 "ipfs://evidence" \
+  --private-key $ATTESTOR --rpc-url $RPC
 cast send $ESCROW "claim(uint256)" 0 --private-key $BENEFICIARY --rpc-url $RPC
+
+# after deadline
+cast send $ESCROW "reclaim(uint256)" 0 --private-key $SPONSOR --rpc-url $RPC
 ```
 
 ## Out of scope (intentionally)
 
-Stylus, mainnet as the primary chain, oracles, governance, Merkle distributions, subgraphs.
+Stylus, Permit2, dispute windows, multi-token, subgraphs, mainnet as the primary chain. Robinhood / extra distribution surfaces are a future stretch only.
 
 ## License
 

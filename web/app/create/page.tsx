@@ -14,8 +14,9 @@ export default function CreatePage() {
         Fund ordered milestones
       </h1>
       <p className="mt-2 mb-8 max-w-2xl text-sm leading-6 text-muted">
-        Descriptions are ordered for humans. The contract lets the attestor
-        complete any remaining index — documented in{" "}
+        Start from a template or fill the form. Attestors are a 1-of-n set.
+        Evidence is attached later, when someone marks a mile complete — not at
+        create. Documented in{" "}
         <code className="font-mono text-foreground">MilestoneEscrow.sol</code>.
       </p>
       <CreateCampaignForm />

@@ -24,7 +24,7 @@ const syne = Syne({
 export const metadata: Metadata = {
   title: "MileMark — onchain milestone escrow",
   description:
-    "Sponsors lock USDC against ordered milestones on Arbitrum. An attestor marks work complete. The beneficiary claims released funds.",
+    "Sponsors lock USDC against titled milestones on Arbitrum. A 1-of-n attestor set marks work complete. The beneficiary claims; the sponsor reclaims incomplete miles after the deadline.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -7,7 +7,7 @@ import { ESCROW_ADDRESS, explorerTx } from "@/lib/chains";
 import { friendlyError, formatUsdc } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 
-export function ClaimButton({
+export function ReclaimButton({
   campaignId,
   amount,
   disabled,
@@ -26,40 +26,36 @@ export function ClaimButton({
     if (receipt.isSuccess) onSettled?.();
   }, [receipt.isSuccess, onSettled]);
 
+  const tx = hash ? explorerTx(hash) : undefined;
+
   return (
     <div className="flex flex-col gap-2">
       <Button
         size="lg"
+        variant="secondary"
         disabled={disabled || amount === 0n || isPending || receipt.isLoading}
         onClick={() => {
           reset();
           writeContract({
             address: ESCROW_ADDRESS,
             abi: milestoneEscrowAbi,
-            functionName: "claim",
+            functionName: "reclaim",
             args: [campaignId],
           });
         }}
       >
         {isPending || receipt.isLoading
-          ? "Claiming…"
-          : `Claim ${formatUsdc(amount)} USDC`}
+          ? "Reclaiming…"
+          : `Reclaim ${formatUsdc(amount)} USDC`}
       </Button>
-      {error && (
-        <p className="text-sm text-red-300">{friendlyError(error)}</p>
-      )}
+      {error && <p className="text-sm text-red-300">{friendlyError(error)}</p>}
       {receipt.isSuccess && (
         <p className="text-sm text-accent">
-          Claim confirmed onchain.
-          {hash && explorerTx(hash) ? (
+          Reclaim confirmed.
+          {tx ? (
             <>
               {" "}
-              <a
-                href={explorerTx(hash)}
-                target="_blank"
-                rel="noreferrer"
-                className="underline"
-              >
+              <a href={tx} target="_blank" rel="noreferrer" className="underline">
                 View tx
               </a>
             </>
