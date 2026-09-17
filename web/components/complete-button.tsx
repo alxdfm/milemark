@@ -28,19 +28,21 @@ export function CompleteButton({
     if (receipt.isSuccess) onSettled?.();
   }, [receipt.isSuccess, onSettled]);
 
+  const waiting = isPending || receipt.isLoading;
   const tx = hash ? explorerTx(hash) : undefined;
 
   return (
-    <div className="flex w-full min-w-[12rem] flex-col items-stretch gap-2 sm:w-56">
+    <div className="flex w-full max-w-xs flex-col items-stretch gap-2 sm:items-end">
       <Input
-        placeholder="Evidence URI (optional)"
+        placeholder="evidence URI (optional)"
         value={evidenceURI}
         onChange={(e) => setEvidenceURI(e.target.value)}
-        disabled={disabled || isPending || receipt.isLoading}
+        disabled={disabled || waiting}
+        className="h-8 text-xs"
       />
       <Button
         size="sm"
-        disabled={disabled || isPending || receipt.isLoading}
+        disabled={disabled || waiting}
         onClick={() => {
           reset();
           writeContract({
@@ -51,17 +53,15 @@ export function CompleteButton({
           });
         }}
       >
-        {isPending || receipt.isLoading ? "Marking…" : "Mark complete"}
+        {waiting ? "Confirm…" : "Mark complete"}
       </Button>
-      {error && (
-        <p className="text-right text-xs text-red-300">{friendlyError(error)}</p>
-      )}
+      {error && <p className="text-xs text-red-300">{friendlyError(error)}</p>}
       {receipt.isSuccess && tx && (
         <a
           href={tx}
           target="_blank"
           rel="noreferrer"
-          className="text-right text-xs text-accent hover:underline"
+          className="text-xs text-accent hover:underline"
         >
           View tx
         </a>

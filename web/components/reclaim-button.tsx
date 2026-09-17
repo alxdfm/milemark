@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { milestoneEscrowAbi } from "@/lib/abi";
 import { ESCROW_ADDRESS, explorerTx } from "@/lib/chains";
-import { friendlyError, formatUsdc } from "@/lib/format";
+import { formatUsdc, friendlyError } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 
 export function ReclaimButton({
@@ -26,14 +26,14 @@ export function ReclaimButton({
     if (receipt.isSuccess) onSettled?.();
   }, [receipt.isSuccess, onSettled]);
 
+  const waiting = isPending || receipt.isLoading;
   const tx = hash ? explorerTx(hash) : undefined;
 
   return (
     <div className="flex flex-col gap-2">
       <Button
-        size="lg"
         variant="secondary"
-        disabled={disabled || amount === 0n || isPending || receipt.isLoading}
+        disabled={disabled || waiting || amount === 0n}
         onClick={() => {
           reset();
           writeContract({
@@ -44,23 +44,20 @@ export function ReclaimButton({
           });
         }}
       >
-        {isPending || receipt.isLoading
-          ? "Reclaiming…"
-          : `Reclaim ${formatUsdc(amount)} USDC`}
+        {waiting ? "Reclaiming…" : `Reclaim ${formatUsdc(amount)} USDC`}
       </Button>
-      {error && <p className="text-sm text-red-300">{friendlyError(error)}</p>}
-      {receipt.isSuccess && (
-        <p className="text-sm text-accent">
-          Reclaim confirmed.
-          {tx ? (
-            <>
-              {" "}
-              <a href={tx} target="_blank" rel="noreferrer" className="underline">
-                View tx
-              </a>
-            </>
-          ) : null}
-        </p>
+      {error && (
+        <p className="text-xs text-red-300">{friendlyError(error)}</p>
+      )}
+      {receipt.isSuccess && tx && (
+        <a
+          href={tx}
+          target="_blank"
+          rel="noreferrer"
+          className="text-xs text-accent hover:underline"
+        >
+          View tx
+        </a>
       )}
     </div>
   );

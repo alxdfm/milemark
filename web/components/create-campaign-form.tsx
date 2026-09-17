@@ -17,11 +17,6 @@ import {
   isEscrowConfigured,
 } from "@/lib/chains";
 import { friendlyError, formatUsdc } from "@/lib/format";
-import {
-  CAMPAIGN_TEMPLATES,
-  deadlineDaysFromNow,
-  type MilestoneDraft,
-} from "@/lib/templates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,22 +29,64 @@ import {
 } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
 
-const emptyRow = (): MilestoneDraft => ({ description: "", amount: "" });
+type Row = { description: string; amount: string };
+
+const emptyRow = (): Row => ({ description: "", amount: "" });
+
+const TEMPLATES = [
+  {
+    id: "hackathon",
+    label: "Hackathon prize",
+    title: "Hackathon prize",
+    briefURI: "https://example.com/brief",
+    days: 21,
+    rows: [
+      { description: "Ship public demo", amount: "40" },
+      { description: "Pass review", amount: "30" },
+      { description: "Handoff + docs", amount: "30" },
+    ],
+  },
+  {
+    id: "retainer",
+    label: "Retainer biweekly",
+    title: "Biweekly retainer",
+    briefURI: "",
+    days: 30,
+    rows: [
+      { description: "Sprint A delivery", amount: "50" },
+      { description: "Sprint B delivery", amount: "50" },
+    ],
+  },
+  {
+    id: "grant",
+    label: "Grant AF-style",
+    title: "Milestone grant",
+    briefURI: "https://example.com/grant",
+    days: 60,
+    rows: [
+      { description: "MVP on testnet", amount: "25" },
+      { description: "Audit notes addressed", amount: "35" },
+      { description: "Mainnet / handoff", amount: "40" },
+    ],
+  },
+] as const;
 
 export function CreateCampaignForm() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
-  const [title, setTitle] = useState("Hackathon prize");
+  const [title, setTitle] = useState("MileMark campaign");
   const [briefURI, setBriefURI] = useState("");
+  const [deadlineLocal, setDeadlineLocal] = useState(() => {
+    const d = new Date(Date.now() + 14 * 86400_000);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  });
   const [beneficiary, setBeneficiary] = useState("");
   const [attestors, setAttestors] = useState<string[]>([""]);
-  const [deadlineLocal, setDeadlineLocal] = useState(() =>
-    deadlineDaysFromNow(30),
-  );
-  const [rows, setRows] = useState<MilestoneDraft[]>([
-    { description: "Ship public demo", amount: "100" },
-    { description: "Pass review / audit notes", amount: "250" },
-    { description: "Handoff + docs", amount: "150" },
+  const [rows, setRows] = useState<Row[]>([
+    { description: "Ship public demo", amount: "40" },
+    { description: "Pass review", amount: "30" },
+    { description: "Handoff + docs", amount: "30" },
   ]);
   const [localError, setLocalError] = useState<string | null>(null);
   const [action, setAction] = useState<"approve" | "create" | null>(null);
@@ -90,41 +127,44 @@ export function CreateCampaignForm() {
       }
     }
     const total = amounts.reduce((s, a) => (a > 0n ? s + a : s), 0n);
-    const deadlineUnix = Math.floor(new Date(deadlineLocal).getTime() / 1000);
-    return { descriptions, amounts, total, deadlineUnix };
+    const deadlineSec = Math.floor(new Date(deadlineLocal).getTime() / 1000);
+    return { descriptions, amounts, total, deadlineSec };
   }, [rows, deadlineLocal]);
 
   const needsApproval = (allowance ?? 0n) < parsed.total;
   const waiting = isPending || receipt.isLoading;
 
   useEffect(() => {
-    if (!receipt.isSuccess || !receipt.data) return;
+    if (!receipt.isSuccess || !receipt.data || !hash) return;
     if (action === "approve") {
       void refetchAllowance();
       setAction(null);
-      reset();
       return;
     }
     if (action === "create") {
-      const logs = parseEventLogs({
-        abi: milestoneEscrowAbi,
-        logs: receipt.data.logs,
-        eventName: "CampaignCreated",
-      });
-      const id = logs[0]?.args.campaignId;
-      if (id !== undefined) {
-        router.replace(`/campaign/${id.toString()}`);
+      try {
+        const logs = parseEventLogs({
+          abi: milestoneEscrowAbi,
+          logs: receipt.data.logs,
+          eventName: "CampaignCreated",
+        });
+        const id = logs[0]?.args?.campaignId;
+        if (id !== undefined) router.replace(`/campaign/${id.toString()}`);
+      } catch {
+        /* ignore parse miss */
       }
     }
-  }, [receipt.isSuccess, receipt.data, action, refetchAllowance, reset, router]);
+  }, [receipt.isSuccess, receipt.data, hash, action, refetchAllowance, router]);
 
   function applyTemplate(id: string) {
-    const template = CAMPAIGN_TEMPLATES.find((t) => t.id === id);
-    if (!template) return;
-    setTitle(template.title);
-    setBriefURI(template.briefURI);
-    setDeadlineLocal(deadlineDaysFromNow(template.days));
-    setRows(template.rows.map((r) => ({ ...r })));
+    const t = TEMPLATES.find((x) => x.id === id);
+    if (!t) return;
+    setTitle(t.title);
+    setBriefURI(t.briefURI);
+    setRows(t.rows.map((r) => ({ ...r })));
+    const d = new Date(Date.now() + t.days * 86400_000);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    setDeadlineLocal(d.toISOString().slice(0, 16));
   }
 
   function validate(): {
@@ -138,37 +178,27 @@ export function CreateCampaignForm() {
       return null;
     }
     if (!title.trim()) {
-      setLocalError("Give the campaign a title.");
+      setLocalError("Title is required.");
+      return null;
+    }
+    if (!Number.isFinite(parsed.deadlineSec) || parsed.deadlineSec <= Math.floor(Date.now() / 1000)) {
+      setLocalError("Deadline must be in the future.");
       return null;
     }
     if (!isAddress(beneficiary)) {
       setLocalError("Beneficiary must be a valid address.");
       return null;
     }
-    const attestorList = attestors.map((a) => a.trim()).filter(Boolean);
-    if (attestorList.length === 0) {
+    const cleaned = attestors.map((a) => a.trim()).filter(Boolean);
+    if (cleaned.length === 0) {
       setLocalError("Add at least one attestor.");
       return null;
     }
-    const unique: Address[] = [];
-    const seen = new Set<string>();
-    for (const raw of attestorList) {
-      if (!isAddress(raw)) {
-        setLocalError(`Attestor ${raw} is not a valid address.`);
+    for (const a of cleaned) {
+      if (!isAddress(a)) {
+        setLocalError(`Invalid attestor: ${a}`);
         return null;
       }
-      const key = raw.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      unique.push(raw);
-    }
-    if (!Number.isFinite(parsed.deadlineUnix) || parsed.deadlineUnix <= 0) {
-      setLocalError("Pick a valid deadline.");
-      return null;
-    }
-    if (parsed.deadlineUnix <= Math.floor(Date.now() / 1000)) {
-      setLocalError("Deadline must be in the future.");
-      return null;
     }
     if (rows.length === 0) {
       setLocalError("Add at least one milestone.");
@@ -180,11 +210,11 @@ export function CreateCampaignForm() {
         return null;
       }
       if (parsed.amounts[i] <= 0n) {
-        setLocalError(`Milestone ${i + 1} needs a USDC amount greater than 0.`);
+        setLocalError(`Milestone ${i + 1} needs a USDC amount > 0.`);
         return null;
       }
     }
-    return { beneficiary, attestors: unique };
+    return { beneficiary: beneficiary as Address, attestors: cleaned as Address[] };
   }
 
   function onApprove() {
@@ -211,7 +241,7 @@ export function CreateCampaignForm() {
         ok.attestors,
         title.trim(),
         briefURI.trim(),
-        BigInt(parsed.deadlineUnix),
+        BigInt(parsed.deadlineSec),
         parsed.descriptions,
         parsed.amounts,
       ],
@@ -225,61 +255,58 @@ export function CreateCampaignForm() {
       <CardHeader>
         <CardTitle>Lock a campaign</CardTitle>
         <CardDescription>
-          You are the sponsor. After approve, create pulls the total USDC.
-          Any listed attestor can complete miles (1-of-n). After the deadline
-          you can reclaim amounts still locked on incomplete miles.
+          v2: title, brief, deadline, 1-of-n attestors. Approve USDC then create.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <Label>Templates</Label>
-          <div className="flex flex-wrap gap-2">
-            {CAMPAIGN_TEMPLATES.map((template) => (
-              <Button
-                key={template.id}
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => applyTemplate(template.id)}
-              >
-                {template.label}
-              </Button>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {TEMPLATES.map((t) => (
+            <Button
+              key={t.id}
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => applyTemplate(t.id)}
+            >
+              {t.label}
+            </Button>
+          ))}
         </div>
 
         {!isConnected && (
           <p className="rounded-md border border-line bg-ink px-3 py-2 text-sm text-muted">
-            Connect a wallet on the configured chain to approve USDC and create
-            the campaign.
+            Connect a wallet on Arbitrum Sepolia to approve and create.
           </p>
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2 sm:col-span-2">
             <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              placeholder="Campaign title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="grid gap-2 sm:col-span-2">
-            <Label htmlFor="brief">Brief URI</Label>
+            <Label htmlFor="brief">Brief URI (optional)</Label>
             <Input
               id="brief"
-              placeholder="https://… or ipfs://… (optional)"
+              placeholder="https://… or ipfs://"
               value={briefURI}
               onChange={(e) => setBriefURI(e.target.value)}
-              spellCheck={false}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="deadline">Deadline</Label>
+            <Input
+              id="deadline"
+              type="datetime-local"
+              value={deadlineLocal}
+              onChange={(e) => setDeadlineLocal(e.target.value)}
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="beneficiary">Beneficiary</Label>
             <Input
               id="beneficiary"
-              placeholder="0x… receives released USDC"
+              placeholder="0x…"
               value={beneficiary}
               onChange={(e) => setBeneficiary(e.target.value)}
               spellCheck={false}
@@ -294,15 +321,6 @@ export function CreateCampaignForm() {
               </button>
             )}
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="deadline">Deadline</Label>
-            <Input
-              id="deadline"
-              type="datetime-local"
-              value={deadlineLocal}
-              onChange={(e) => setDeadlineLocal(e.target.value)}
-            />
-          </div>
         </div>
 
         <div className="grid gap-3">
@@ -314,19 +332,16 @@ export function CreateCampaignForm() {
               size="sm"
               onClick={() => setAttestors((a) => [...a, ""])}
             >
-              <Plus />
-              Add
+              <Plus /> Add
             </Button>
           </div>
-          {attestors.map((value, i) => (
-            <div key={i} className="grid grid-cols-[1fr_2.5rem] items-center gap-2">
+          {attestors.map((a, i) => (
+            <div key={i} className="flex gap-2">
               <Input
-                placeholder="0x… can mark miles complete"
-                value={value}
+                placeholder="0x… attestor"
+                value={a}
                 onChange={(e) =>
-                  setAttestors((prev) =>
-                    prev.map((a, j) => (j === i ? e.target.value : a)),
-                  )
+                  setAttestors((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))
                 }
                 spellCheck={false}
               />
@@ -334,11 +349,8 @@ export function CreateCampaignForm() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label="Remove attestor"
                 disabled={attestors.length === 1}
-                onClick={() =>
-                  setAttestors((prev) => prev.filter((_, j) => j !== i))
-                }
+                onClick={() => setAttestors((prev) => prev.filter((_, j) => j !== i))}
               >
                 <Trash2 />
               </Button>
@@ -348,13 +360,13 @@ export function CreateCampaignForm() {
             <button
               type="button"
               className="justify-self-start text-xs text-accent hover:underline"
-              onClick={() =>
-                setAttestors((prev) =>
-                  prev[0] === "" ? [address, ...prev.slice(1)] : [address, ...prev],
-                )
-              }
+              onClick={() => setAttestors((prev) => {
+                const next = [...prev];
+                next[0] = address;
+                return next;
+              })}
             >
-              Use my wallet as attestor
+              Set first attestor to my wallet
             </button>
           )}
         </div>
@@ -368,14 +380,13 @@ export function CreateCampaignForm() {
               size="sm"
               onClick={() => setRows((r) => [...r, emptyRow()])}
             >
-              <Plus />
-              Add
+              <Plus /> Add
             </Button>
           </div>
           {rows.map((row, i) => (
             <div
               key={i}
-              className="grid grid-cols-[2.5rem_minmax(0,1fr)_6.5rem_2.5rem] items-center gap-2"
+              className="grid grid-cols-[2.5rem_1fr_7rem_2.5rem] items-center gap-2"
             >
               <span className="font-mono text-xs text-muted">
                 {String(i + 1).padStart(2, "0")}
@@ -407,11 +418,8 @@ export function CreateCampaignForm() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label="Remove milestone"
                 disabled={rows.length === 1}
-                onClick={() =>
-                  setRows((prev) => prev.filter((_, j) => j !== i))
-                }
+                onClick={() => setRows((prev) => prev.filter((_, j) => j !== i))}
               >
                 <Trash2 />
               </Button>
@@ -429,9 +437,7 @@ export function CreateCampaignForm() {
         {address && balance !== undefined && (
           <p className="text-xs text-muted">
             Wallet balance: {formatUsdc(balance)} USDC
-            {balance < parsed.total
-              ? " — not enough to fund this campaign."
-              : ""}
+            {balance < parsed.total ? " — not enough to fund this campaign." : ""}
           </p>
         )}
 
@@ -441,15 +447,16 @@ export function CreateCampaignForm() {
           </p>
         )}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           {needsApproval ? (
             <Button
               type="button"
               onClick={onApprove}
               disabled={!isConnected || waiting || parsed.total === 0n}
+              className="sm:flex-1"
             >
               {waiting && action === "approve"
-                ? "Confirm approve in wallet…"
+                ? "Confirm in wallet…"
                 : `Approve ${formatUsdc(parsed.total)} USDC`}
             </Button>
           ) : (
@@ -457,16 +464,10 @@ export function CreateCampaignForm() {
               type="button"
               onClick={onCreate}
               disabled={!isConnected || waiting || parsed.total === 0n}
+              className="sm:flex-1"
             >
-              {waiting && action === "create"
-                ? "Locking USDC…"
-                : "Create campaign"}
+              {waiting && action === "create" ? "Locking USDC…" : "Create campaign"}
             </Button>
-          )}
-          {needsApproval && (
-            <p className="text-xs text-muted">
-              After approve confirms, the button switches to Create campaign.
-            </p>
           )}
         </div>
       </CardContent>

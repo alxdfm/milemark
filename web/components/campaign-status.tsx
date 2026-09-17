@@ -286,7 +286,6 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
 
   const briefHref = externalHref(view.briefURI);
   const escrowHref = explorerAddress(ESCROW_ADDRESS);
-  const pastDeadline = nowSec > Number(view.deadline);
   const displayTitle = view.title.trim() || `Campaign ${id.toString()}`;
 
   async function copyLink() {
@@ -461,24 +460,24 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
         </CardContent>
       </Card>
 
-      {isSponsor && pastDeadline && reclaimable > 0n && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Reclaim</CardTitle>
-            <CardDescription>
-              Deadline has passed. Pull USDC still locked on incomplete miles.
-              Completed-but-unclaimed amounts stay with the beneficiary.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ReclaimButton
-              campaignId={id}
-              amount={reclaimable}
-              onSettled={refetch}
-            />
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Reclaim</CardTitle>
+          <CardDescription>
+            After the deadline, the sponsor can reclaim USDC still locked in
+            incomplete milestones. Completed-but-unclaimed amounts stay with the
+            beneficiary.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ReclaimButton
+            campaignId={id}
+            amount={reclaimable}
+            disabled={!isSponsor || reclaimable === 0n}
+            onSettled={refetch}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
