@@ -2,7 +2,7 @@
 
 MileMark is a **v3** onchain milestone escrow. The Solidity ABI is the source of truth. The Next.js app is a thin client over `getCampaign` / `getMilestones` / `getAttestors` / `hasAttestedAll` plus five write paths (`createCampaign`, `attestMilestone`, `dispute`, `claim`, `reclaim`). There is no indexer and no backend besides a same-origin RPC proxy.
 
-Live Arbitrum Sepolia **v3** escrow is the address in `web/lib/contracts/addresses.ts` (`LIVE_ESCROW_V3`) after deploy. Circle testnet USDC: `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`.
+Live Arbitrum Sepolia **v3** escrow: [`0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC`](https://sepolia.arbiscan.io/address/0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC) (`LIVE_ESCROW_V3`). Circle testnet USDC: `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`. Deploy tx [`0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464`](https://sepolia.arbiscan.io/tx/0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464).
 
 Frozen, ABI-incompatible predecessors — **do not wire the UI**:
 

@@ -1,7 +1,11 @@
 # MileMark v3 deploy (Arbitrum Sepolia)
 
+**Live v3:** `0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC`  
+Deploy tx: `0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464`  
+Deployer: `0x3A17eD984f20C50C6927addDAEf633fff40f84D4`  
 USDC: `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`  
-Do not reuse v2 `0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207`.
+Demo campaign id `0` (create tx `0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4`)  
+Do not reuse frozen v2 `0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207`.
 
 Constructor ABI encoding (`cast abi-encode "constructor(address)" 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`):
 

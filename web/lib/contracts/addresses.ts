@@ -9,13 +9,13 @@ import {
 export const LIVE_ESCROW_V2 =
   "0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207" as const satisfies Address;
 
-/**
- * Live v3 MilestoneEscrow on Arbitrum Sepolia.
- * Updated after `forge script script/Deploy.s.sol` — leave as the committed
- * Sepolia address so `.env.example` and the UI stay aligned.
- */
+/** Live v3 MilestoneEscrow on Arbitrum Sepolia. ABI-incompatible with v2 — new address. */
 export const LIVE_ESCROW_V3 =
-  "0x0000000000000000000000000000000000000000" as const satisfies Address;
+  "0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC" as const satisfies Address;
+
+/** v3 deploy tx on Arbitrum Sepolia. */
+export const LIVE_ESCROW_V3_DEPLOY_TX =
+  "0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464" as const;
 
 /** Obsolete v1 — ABI-incompatible. Never wire the UI here. */
 export const OBSOLETE_ESCROW_V1 =
@@ -50,7 +50,7 @@ export const USDC_ADDRESS = readAddress(
 
 /** Start of getLogs range. Arb Sepolia RPCs reject fromBlock 0. */
 export const ESCROW_FROM_BLOCK = BigInt(
-  process.env.NEXT_PUBLIC_ESCROW_FROM_BLOCK ?? "309650000",
+  process.env.NEXT_PUBLIC_ESCROW_FROM_BLOCK ?? "309949200",
 );
 
 export const isEscrowConfigured =

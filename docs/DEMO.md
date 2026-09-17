@@ -1,10 +1,15 @@
 # Demo
 
-Walkthrough for the live **v3** escrow on Arbitrum Sepolia. Shareable UI kit: [`/demo`](/demo). Featured campaign id is `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` (default `0` after `CreateDemo.s.sol`).
+Walkthrough for the live **v3** escrow on Arbitrum Sepolia. Shareable UI kit: [`/demo`](/demo). Featured campaign: **id `0`**.
 
-Frozen v2 `0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207` and obsolete v1 `0x72b474DB34268281CD10db655cc1517C33973049` are ABI-incompatible — do not wire them.
-
-USDC: `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`
+| Item | Value |
+|---|---|
+| Escrow v3 | [`0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC`](https://sepolia.arbiscan.io/address/0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC) |
+| Deploy tx | [`0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464`](https://sepolia.arbiscan.io/tx/0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464) |
+| Demo campaign | [`/campaign/0`](/campaign/0) · create tx [`0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4`](https://sepolia.arbiscan.io/tx/0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4) |
+| USDC | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
+| Frozen v2 (do not wire) | `0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207` |
+| Obsolete v1 | `0x72b474DB34268281CD10db655cc1517C33973049` |
 
 ## 3-minute judge script
 
