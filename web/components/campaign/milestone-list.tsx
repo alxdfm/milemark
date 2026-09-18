@@ -1,8 +1,13 @@
+import { cn } from "@/lib/utils";
 import {
+  DISPUTE_WHO,
   canDispute,
+  disputeReason,
+  formatChallengeRemaining,
   formatUsdc,
   isChallengeOpen,
   milestoneStatus,
+  showDisputeControls,
   type Milestone,
 } from "@/lib/milemark";
 import { linkLabel, publicHref } from "@/lib/links";
@@ -16,15 +21,6 @@ import {
 import { CompleteButton } from "./complete-button";
 import { DisputeButton } from "./dispute-button";
 
-function windowLabel(completedAt: bigint, challengeWindow: bigint, nowSec: number): string {
-  const ends = Number(completedAt + challengeWindow);
-  const delta = ends - nowSec;
-  if (delta <= 0) return "window closed";
-  if (delta < 60) return `${delta}s to dispute`;
-  if (delta < 3600) return `${Math.ceil(delta / 60)}m to dispute`;
-  return `${Math.ceil(delta / 3600)}h to dispute`;
-}
-
 export function MilestoneList({
   campaignId,
   milestones,
@@ -33,6 +29,7 @@ export function MilestoneList({
   nowSec,
   isAttestor,
   isSponsor,
+  connected,
   attestedFlags,
   onSettled,
 }: {
@@ -43,6 +40,7 @@ export function MilestoneList({
   nowSec: number;
   isAttestor: boolean;
   isSponsor: boolean;
+  connected: boolean;
   attestedFlags: readonly boolean[];
   onSettled: () => void;
 }) {
@@ -51,7 +49,7 @@ export function MilestoneList({
       <CardHeader>
         <CardTitle>Milestones</CardTitle>
         <CardDescription>
-          Any-order · quorum {quorum} · first non-empty evidence wins
+          Any-order · quorum {quorum} · first non-empty evidence wins. {DISPUTE_WHO}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -64,19 +62,39 @@ export function MilestoneList({
             milestone.completed ||
             milestone.reclaimed ||
             alreadyAttested;
-          const showDispute = canDispute(
+          const challenging = isChallengeOpen(milestone, challengeWindow, nowSec);
+          const showDispute = showDisputeControls(milestone);
+          const allowed = canDispute(
             milestone,
             challengeWindow,
             nowSec,
             isSponsor,
             isAttestor,
           );
-          const challenging = isChallengeOpen(milestone, challengeWindow, nowSec);
+          const reason = showDispute
+            ? disputeReason({
+                connected,
+                isSponsor,
+                isAttestor,
+                completed: milestone.completed,
+                disputed: milestone.disputed,
+                claimed: milestone.claimed,
+                reclaimed: milestone.reclaimed,
+                windowOpen: challenging,
+              })
+            : null;
+          const endsAt = milestone.completedAt + challengeWindow;
 
           return (
             <div
               key={index}
-              className="flex flex-col gap-2 border-b border-line py-3 last:border-0 sm:flex-row sm:items-start sm:justify-between"
+              className={cn(
+                "flex flex-col gap-2 border-b border-line py-3 last:border-0 sm:flex-row sm:items-start sm:justify-between",
+                status === "disputed" &&
+                  "-mx-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 last:border",
+                status === "challenging" &&
+                  "-mx-2 rounded-md border border-amber-500/35 bg-amber-500/10 px-3 last:border",
+              )}
             >
               <div>
                 <p className="font-mono text-xs text-muted">
@@ -89,8 +107,9 @@ export function MilestoneList({
                   {milestone.attestationCount}/{quorum} attested
                 </p>
                 {challenging ? (
-                  <p className="text-xs text-accent">
-                    {windowLabel(milestone.completedAt, challengeWindow, nowSec)}
+                  <p className="text-xs text-amber-200">
+                    {formatChallengeRemaining(endsAt, nowSec)} — claim blocked until
+                    the window closes (or if disputed).
                   </p>
                 ) : null}
                 {milestone.disputed ? (
@@ -137,6 +156,8 @@ export function MilestoneList({
                   <DisputeButton
                     campaignId={campaignId}
                     index={index}
+                    disabled={!allowed}
+                    reason={reason}
                     onSettled={onSettled}
                   />
                 ) : null}

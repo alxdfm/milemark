@@ -8,6 +8,7 @@ export {
   LIVE_ESCROW_V3,
   LIVE_ESCROW_V3_DEPLOY_TX,
   OBSOLETE_ESCROW_V1,
+  SMOKE_CAMPAIGN_ID,
   USDC_ADDRESS,
   isEscrowConfigured,
 } from "./addresses";

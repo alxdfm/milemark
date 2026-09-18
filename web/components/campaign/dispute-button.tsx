@@ -11,11 +11,13 @@ export function DisputeButton({
   campaignId,
   index,
   disabled,
+  reason,
   onSettled,
 }: {
   campaignId: bigint;
   index: number;
   disabled?: boolean;
+  reason?: string | null;
   onSettled?: () => void;
 }) {
   const { writeContract, data: hash, isPending, error, reset } =
@@ -34,6 +36,7 @@ export function DisputeButton({
         size="sm"
         variant="danger"
         disabled={disabled || waiting}
+        title={reason ?? undefined}
         onClick={() => {
           reset();
           writeContract({
@@ -46,6 +49,7 @@ export function DisputeButton({
       >
         {waiting ? "Disputing…" : "Dispute"}
       </Button>
+      {reason ? <p className="text-xs text-muted">{reason}</p> : null}
       <TxFeedback
         hash={hash}
         error={error}

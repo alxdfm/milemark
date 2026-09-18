@@ -24,9 +24,11 @@ type Item = {
 export function CampaignTimeline({
   campaignId,
   refreshKey,
+  campaignExists = false,
 }: {
   campaignId: bigint;
   refreshKey: number;
+  campaignExists?: boolean;
 }) {
   const client = usePublicClient({ chainId: milemarkChain.id });
   const [items, setItems] = useState<Item[]>([]);
@@ -167,7 +169,11 @@ export function CampaignTimeline({
       {loading && <p className="text-sm text-muted">Reading onchain events…</p>}
       {error && <p className="text-sm text-red-300">{error}</p>}
       {!loading && !error && items.length === 0 && (
-        <p className="text-sm text-muted">No events indexed from this escrow yet.</p>
+        <p className="text-sm text-muted">
+          {campaignExists
+            ? `No events in the configured fromBlock window (${ESCROW_FROM_BLOCK.toString()}). If this campaign exists, set NEXT_PUBLIC_ESCROW_FROM_BLOCK to a block before CampaignCreated (canonical live v3: 309949200) and rebuild. getCampaign still works.`
+            : "No events indexed from this escrow yet."}
+        </p>
       )}
       {items.map((item) => {
         const href = explorerTx(item.txHash);

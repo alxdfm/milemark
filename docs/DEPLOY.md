@@ -19,7 +19,7 @@ v3 is **already live** at `0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC`. Broadcas
 | Deployer | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4` |
 | Deploy block | `309949272` |
 | UI `fromBlock` (canonical) | `309949200` |
-| Demo campaign | id `0` (1-of-1, **not** the 2-of-3 create template) |
+| Demo campaign | id `0` (1-of-1 **smoke**, **not** the 2-of-3 create template). Featured 2-of-3: run `CreateFeaturedDemo.s.sol` then set `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` |
 | Demo create tx | `0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4` |
 | Demo create block | `309949346` |
 | USDC (Circle testnet) | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
@@ -77,7 +77,7 @@ There are **no** server-only secrets. `POST /rpc` uses the same `NEXT_PUBLIC_RPC
 
 ### Contracts (`contracts/.env` — Foundry)
 
-`script/Deploy.s.sol` and `script/CreateDemo.s.sol` read these via `vm.env*` / `vm.envOr`. Names must match exactly.
+`script/Deploy.s.sol`, `script/CreateDemo.s.sol`, and `script/CreateFeaturedDemo.s.sol` read these via `vm.env*` / `vm.envOr`. Names must match exactly.
 
 | Variable | Meaning | Example | Local Anvil | Sepolia deploy | Sepolia `CreateDemo` |
 |---|---|---|---|---|---|
@@ -89,12 +89,15 @@ There are **no** server-only secrets. `POST /rpc` uses the same `NEXT_PUBLIC_RPC
 | `ESCROW_ADDRESS` | Already-deployed v3 escrow for `CreateDemo.s.sol` | live `0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC` | **required** after local deploy | unused by `Deploy.s.sol` | **required** |
 | `BENEFICIARY` | Campaign beneficiary | defaults to the sponsor | optional | n/a | optional |
 | `ATTESTOR` | First attestor | defaults to the sponsor | optional | n/a | optional |
-| `ATTESTOR_2` | Second attestor; if set and ≠ `ATTESTOR`, default quorum becomes `2` | a second address | optional | n/a | optional |
-| `QUORUM` | `uint8`; must satisfy `1 <= quorum <= unique attestors` | `1` or `2` | optional (default 1, or 2 if `ATTESTOR_2`) | n/a | optional |
-| `CHALLENGE_WINDOW` | Seconds after quorum before claim | `60` | optional (default `60`) | n/a | optional |
-| `DEADLINE_SECONDS` | Deadline offset from `block.timestamp` | `604800` (7 days) | optional (default `7 days`) | n/a | optional |
+| `ATTESTOR_2` | Second attestor. For `CreateDemo`, if set and ≠ `ATTESTOR`, default quorum becomes `2`. **Required** for `CreateFeaturedDemo` | a second address | optional / **required for featured** | n/a | optional / required |
+| `ATTESTOR_3` | Third unique attestor. **Required** for `CreateFeaturedDemo` | a third address | **required for featured** | n/a | **required for featured** |
+| `QUORUM` | `uint8`; must satisfy `1 <= quorum <= unique attestors` | `1` or `2` | optional (CreateDemo: 1, or 2 if `ATTESTOR_2`; Featured: default 2) | n/a | optional |
+| `CHALLENGE_WINDOW` | Seconds after quorum before claim | `60` or `3600` | optional (CreateDemo default `60`; Featured default `3600`) | n/a | optional |
+| `DEADLINE_SECONDS` | Deadline offset from `block.timestamp` | `604800` / `2592000` | optional (CreateDemo `7 days`; Featured `30 days`) | n/a | optional |
 
-`CreateDemo.s.sol` **hardcodes** amounts `4e6 + 6e6` (10 USDC, 6 decimals), title `MileMark v3 demo`, brief `https://github.com/callydus/milemark`, and two mile descriptions. That is **not** live campaign `0` (1-of-1, 3 USDC, title `MM v3 Demo Quorum`). The sponsor must hold **≥ 10 USDC** of `escrow.usdc()`; the script `approve`s the total.
+`CreateDemo.s.sol` **hardcodes** amounts `4e6 + 6e6` (10 USDC), title `MileMark v3 demo`, 60s window. That is **not** live campaign `0` and **not** the 2-of-3 featured exhibit.
+
+`CreateFeaturedDemo.s.sol` **hardcodes** 3+4+3 USDC, title `MileMark featured 2-of-3`, quorum 2, 1 hour window, 30 day deadline. It requires three unique attestors (`ATTESTOR` defaults to sponsor; `ATTESTOR_2` and `ATTESTOR_3` are required). Sponsor must hold **≥ 10 USDC**. After broadcast, set `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` to the printed id and rebuild. Id `0` stays the historical 1-of-1 smoke.
 
 ### Frontend (`NEXT_PUBLIC_*`)
 
@@ -106,7 +109,7 @@ All public (inlined into the client bundle). Same names for local, Sepolia, and 
 | `NEXT_PUBLIC_CHAIN_ID` | `421614` = Arbitrum Sepolia. `31337` selects the Anvil chain object and skips the `/rpc` proxy | `421614` | `31337` | Optional on Sepolia (fallback `421614`). **Set `31337`** for Anvil |
 | `NEXT_PUBLIC_ESCROW_ADDRESS` | MilestoneEscrow **v3**. v1/v2 addresses make `isEscrowConfigured` false | `0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC` | address printed by `Deploy.s.sol` | Optional on Sepolia (fallback `LIVE_ESCROW_V3`). **Set** after a new deploy / Anvil |
 | `NEXT_PUBLIC_USDC_ADDRESS` | Token the **create form** approves. Must equal `escrow.usdc()` | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` | `MockERC20` address | Optional on Sepolia (fallback Circle USDC). **Set** for Anvil |
-| `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` | Featured id for `/`, `/demo` “Open live campaign” | `0` | `0` after first local `CreateDemo` | Optional (fallback `"0"`). **Set** if you create a new featured campaign |
+| `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` | Featured id for `/`, `/demo` “Open live campaign” | `0` (1-of-1 smoke until Featured is minted) | `0` after first local `CreateDemo` | Optional (fallback `"0"`). **Set** after `CreateFeaturedDemo` |
 | `NEXT_PUBLIC_ESCROW_FROM_BLOCK` | `getLogs` start for the activity timeline | `309949200` | `0` is OK on Anvil | Optional on current v3 (fallback `309949200`). **Set** after a **new** escrow deploy |
 
 No other `process.env` keys exist in `web/` besides these six.
@@ -201,7 +204,7 @@ If `usdc()` is not Circle USDC on Sepolia, the UI will approve the wrong token (
 
 ### Live id `0` (already onchain)
 
-Featured production campaign is **id `0`**: 1-of-1, 60s window, 3 USDC, title `MM v3 Demo Quorum`. It was **not** created by `CreateDemo.s.sol` (that script’s defaults are 4+6 USDC and title `MileMark v3 demo`). Running the script against live v3 mints the **next** id (currently `1` if `campaignCount` is still `1`).
+Featured production campaign is **id `0`**: 1-of-1, 60s window, 3 USDC, title `MM v3 Demo Quorum`. It was **not** created by `CreateDemo.s.sol` or `CreateFeaturedDemo.s.sol`. Running either script against live v3 mints the **next** id (currently `1` if `campaignCount` is still `1`). Do not describe id `0` as 2-of-3.
 
 Verify id `0`:
 
@@ -212,7 +215,7 @@ cast call $ESCROW "getAttestors(uint256)(address[])" 0 --rpc-url $RPC
 
 Unknown ids revert `CampaignNotFound` (the UI shows “Could not load campaign” with that error).
 
-### Create a new demo (`CreateDemo.s.sol`)
+### Create a new 1-of-1 smoke (`CreateDemo.s.sol`)
 
 ```bash
 cd contracts
@@ -232,6 +235,45 @@ cast call $ESCROW "campaignCount()(uint256)" --rpc-url $RPC
 ```
 
 Optional: `BENEFICIARY`, `ATTESTOR`, `ATTESTOR_2`, `QUORUM`. If `QUORUM` exceeds unique attestors, the tx reverts `InvalidQuorum`. If `ATTESTOR_2` is unset, you get a 1-of-1 with the sponsor as attestor.
+
+### Create a featured 2-of-3 (`CreateFeaturedDemo.s.sol`)
+
+Needs a **funded** sponsor key (Sepolia ETH + ≥ 10 Circle USDC) and **three unique attestor addresses**. This cloud environment has no such key — the operator must broadcast.
+
+```bash
+cd contracts
+ESCROW_ADDRESS=0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC \
+ATTESTOR_2=0x<unique-attestor-2> \
+ATTESTOR_3=0x<unique-attestor-3> \
+PRIVATE_KEY=$PRIVATE_KEY \
+CHALLENGE_WINDOW=3600 \
+forge script script/CreateFeaturedDemo.s.sol \
+  --rpc-url ${ARB_SEPOLIA_RPC_URL:-https://sepolia-rollup.arbitrum.io/rpc} \
+  --broadcast --chain 421614
+```
+
+The script prints `Featured campaign id:`. Point the UI at it:
+
+```bash
+# web/.env.local or Vercel Production env, then rebuild
+NEXT_PUBLIC_DEMO_CAMPAIGN_ID=<printed-id>
+```
+
+Keep id `0` in docs as the original 1-of-1 smoke. `/demo` reads the featured campaign onchain and will not call it 2-of-3 unless `quorum` and attestor count say so.
+
+Equivalent `cast send` (replace `$DEADLINE` with a unix second strictly in the future):
+
+```bash
+cast send $USDC "approve(address,uint256)" $ESCROW 10000000 --private-key $PK --rpc-url $RPC
+cast send $ESCROW \
+  "createCampaign(address,address[],uint8,string,string,uint64,uint64,string[],uint256[])" \
+  $BENEFICIARY "[$ATTESTOR,$ATTESTOR_2,$ATTESTOR_3]" 2 \
+  "MileMark featured 2-of-3" "https://github.com/callydus/milemark" \
+  $DEADLINE 3600 \
+  '["Public demo live on Sepolia","Two attestors reach quorum","Claim after the challenge window"]' \
+  '[3000000,4000000,3000000]' \
+  --private-key $PK --rpc-url $RPC
+```
 
 ### How to pick `NEXT_PUBLIC_ESCROW_FROM_BLOCK`
 
@@ -340,7 +382,7 @@ Faucet: deployer/sponsor needs **ETH + USDC** on Arbitrum Sepolia before create/
 - [ ] `cast chain-id` → `421614`
 - [ ] `cast call $ESCROW "usdc()(address)"` → Circle USDC
 - [ ] `cast call $ESCROW "campaignCount()(uint256)"` → `≥ 1` if you expect a demo id
-- [ ] `cast call $ESCROW "getCampaign(uint256)" $ID` succeeds (featured production: `0`)
+- [ ] `cast call $ESCROW "getCampaign(uint256)" $ID` succeeds (featured production: `NEXT_PUBLIC_DEMO_CAMPAIGN_ID`, currently `0`)
 - [ ] `cast logs --from-block $FROM ... CampaignCreated` includes the featured campaign’s create block
 
 ### Frontend (production host or `http://localhost:43147`)

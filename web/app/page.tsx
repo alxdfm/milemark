@@ -43,7 +43,7 @@ export default function HomePage() {
               className="text-accent underline"
               href={`/campaign/${DEMO_CAMPAIGN_ID}`}
             >
-              featured demo (id {DEMO_CAMPAIGN_ID})
+              featured campaign (id {DEMO_CAMPAIGN_ID})
             </Link>
             .
           </p>

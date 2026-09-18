@@ -29,7 +29,7 @@ v3 **is not an upgrade** of those addresses. It is a new immutable deploy.
 
 **Problem.** Builder grants, hackathon prizes, and small retainers still settle on trust or a human escrow agent. A missed mile either blocks the next payment or dumps the whole purse.
 
-**Who it is for.** A **sponsor** who will lock USDC, a **beneficiary** who delivers work, and one or more **attestors** who vote that a mile is done. Roles may overlap (the live demo campaign is 1-of-1 with the same address in all three seats).
+**Who it is for.** A **sponsor** who will lock USDC, a **beneficiary** who delivers work, and one or more **attestors** who vote that a mile is done. Roles may overlap (live campaign `0` is 1-of-1 with the same address in all three seats — the original smoke exhibit, not the 2-of-3 featured mint).
 
 **Why onchain.** The split, the quorum, the challenge window, and the deadline reclaim are contract rules, not a spreadsheet. Anyone can verify balances and events on Arbiscan. The UI cannot invent a campaign that the contract does not store.
 
@@ -183,7 +183,7 @@ Dependencies point inward. Domain code never imports wagmi, React, or Next. Deta
 |---|---|---|---|
 | Domain | `web/lib/milemark/` | stdlib only | Addresses, USDC 6-dec math, parse, roles, claim/reclaim/dispute reasons, quorum + window lifecycle, create validation, friendly errors |
 | Contracts | `web/lib/contracts/` | domain address checks | Committed ABI + live/default addresses |
-| Infra | `web/lib/chains.ts`, `web/lib/wagmi.ts`, `web/app/rpc` | contracts | Chain defs, explorer URLs, wallet config, RPC proxy |
+| Infra | `web/lib/chains.ts`, `web/lib/wagmi.ts`, `web/app/rpc`, `web/lib/config-guardrails.ts` | contracts | Chain defs, explorer URLs, wallet config, RPC proxy, non-blocking config warnings |
 | Application | `web/hooks/use-campaign.ts` | contracts + wagmi | Campaign reads, parse, roles, refetch |
 | Presentation | `web/components/{campaign,create,demo}/` | hooks + domain | Cards, forms, demo kit, Arbiscan tx feedback |
 | Containers | `campaign-status.tsx`, `create-campaign-form.tsx` | presentation + hooks | Wire state; no extra parse/validation |
