@@ -2,7 +2,7 @@
 
 MileMark is a **v3** onchain USDC milestone escrow. The Solidity ABI is the source of truth. The Next.js app is a thin client: it reads `getCampaign` / `getMilestones` / `getAttestors` / `hasAttestedAll` and writes `createCampaign`, `attestMilestone`, `dispute`, `claim`, and `reclaim`. There is no indexer and no application database. The only backend in `web/` is a same-origin JSON-RPC proxy (`POST /rpc`).
 
-This document is the canonical **contract + trust + lifecycle** guide. Frontend routes and modules: [`APP.md`](./APP.md). Deploy/ops: [`DEPLOY.md`](./DEPLOY.md). Judge script: [`DEMO.md`](./DEMO.md).
+This document is the canonical **contract + trust + lifecycle** guide. Frontend routes and modules: [`APP.md`](./APP.md). Deploy contracts + UI: [`DEPLOY.md`](./DEPLOY.md). Judge script: [`DEMO.md`](./DEMO.md).
 
 ## Live deploy (current)
 
@@ -203,7 +203,7 @@ Dependencies point inward. Domain code never imports wagmi, React, or Next. Deta
 - **Attestor honesty.** Quorum is a set of EOAs/contracts, not an oracle of “work done”.
 - **URI content.** `briefURI` / `evidenceURI` are strings. IPFS/HTTPS payloads can change, rot, or require a gateway. The UI maps `ipfs://` → `https://ipfs.io/ipfs/…` for clicks; that gateway is not consensus.
 - **Sticky dispute** is a veto, not arbitration.
-- **No indexer.** Timeline quality depends on the RPC `getLogs` range (`fromBlock` must be ≤ the create block). Arb Sepolia public RPCs reject `fromBlock 0`.
+- **No indexer.** Timeline quality depends on the RPC `getLogs` range (`fromBlock` must be ≤ the create block). Some Arb Sepolia providers reject `fromBlock 0` or huge ranges — prefer a start just before deploy (canonical live v3: `309949200`).
 - **UI RPC.** Browsers talk to `POST /rpc`, which forwards to `NEXT_PUBLIC_RPC`. A lying RPC can show a stale or fake read; writes still hit the chain the wallet is on.
 - **No offchain DB.** If the UI is down, the contract still holds funds. If `fromBlock` is too high, the activity feed looks empty even when miles exist (reads via `getCampaign` still work).
 

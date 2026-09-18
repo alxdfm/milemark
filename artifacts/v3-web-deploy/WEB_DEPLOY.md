@@ -1,6 +1,8 @@
 # MileMark v3 web deploy (Vercel)
 
-Production `https://milemark-pearl.vercel.app` was serving a **pre-v3** frontend (`/demo` → Next 404) even with v3 env vars. Env is not enough: Vercel must **rebuild this `web/` tree**.
+Canonical newcomer guide (prerequisites, env matrix, smoke checks, `/demo` 404): [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
+
+This file is the **tarball / rebuild** note. Production `https://milemark-pearl.vercel.app` once served a **pre-v3** frontend (`/demo` → Next 404) even with v3 env vars. Env is not enough: Vercel must **rebuild this `web/` tree** with Root Directory = `web/` (or an archive whose root is `web/package.json`). `web/vercel.json` only sets `"framework": "nextjs"`.
 
 | Item | Value |
 |---|---|

@@ -2,7 +2,7 @@
 
 **This snapshot is historical.** v3 is **already live** — do not treat the commands below as “the current address still needs creating” unless you intend a **new** contract.
 
-Canonical ops (Vercel Root Directory, env, ABI sync, Anvil): [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
+Canonical newcomer guide (prerequisites, `cast` checks, fromBlock, Vercel, failure modes): [`docs/DEPLOY.md`](../../docs/DEPLOY.md).
 
 | Item | Value |
 |---|---|

@@ -50,8 +50,9 @@ export const USDC_ADDRESS = readAddress(
 );
 
 /**
- * Start of getLogs range. Arb Sepolia RPCs reject fromBlock 0.
- * Safe start 309949200 sits before v3 deploy (309949272) and campaign 0
+ * Start of getLogs range. Prefer a block just before this escrow's deploy.
+ * Some Arb Sepolia providers reject fromBlock 0 or huge ranges.
+ * Canonical v3 start 309949200 sits before deploy (309949272) and campaign 0
  * (309949346). Do not default to 309949351 — that misses CampaignCreated.
  */
 export const ESCROW_FROM_BLOCK = BigInt(

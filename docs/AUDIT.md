@@ -2,6 +2,8 @@
 
 Audit date: 2026-09-17. Source of truth: `contracts/src/MilestoneEscrow.sol` (v3 ABI), `web/` App Router, `web/.env.example`, `web/lib/contracts/addresses.ts`, `artifacts/v3-deploy/`, and live Arbitrum Sepolia / production frontend.
 
+Deploy-doc follow-up (2026-09-18): [`AUDIT-DEPLOY.md`](./AUDIT-DEPLOY.md). One correction to this log: `web/.env.production` **is** tracked (`web/.gitignore` exception `!.env.production`); the 2026-09-17 row that said it was not in git was wrong.
+
 Repo docs are **English**. No Portuguese/English factual split was found (no PT copies existed to contradict).
 
 ## Method

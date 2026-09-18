@@ -13,9 +13,10 @@ Sponsors lock USDC into a titled campaign with ordered milestones (completion is
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Product, roles, lifecycle (mermaid), contract API/storage/events/errors/invariants, trust model |
 | [`docs/APP.md`](docs/APP.md) | Routes, components, hooks, `lib/milemark`, how the UI derives roles and disabled buttons |
 | [`docs/DEMO.md`](docs/DEMO.md) | Judge script, live campaign `0` facts, wallet cheat-sheet |
-| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Env vars, Vercel Root Directory (`web/`), Foundry, ABI sync |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | **Canonical deploy guide**: prerequisites, Foundry, fromBlock, Vercel Root Directory (`web/`), env matrix, smoke checks, failure modes |
+| [`docs/AUDIT-DEPLOY.md`](docs/AUDIT-DEPLOY.md) | Deploy-doc audit: gaps found → fixes (2026-09-18) |
 | [`artifacts/v3-web-deploy/WEB_DEPLOY.md`](artifacts/v3-web-deploy/WEB_DEPLOY.md) | Production tarball / Vercel rebuild notes |
-| [`docs/AUDIT.md`](docs/AUDIT.md) | Incongruence log (this documentation pass) |
+| [`docs/AUDIT.md`](docs/AUDIT.md) | Product/docs incongruence log (2026-09-17) |
 | [`SUBMISSION.md`](SUBMISSION.md) | One-pager for reviewers |
 
 ## Live (current = v3 only)
@@ -77,7 +78,7 @@ milemark/
 
 ## Local setup
 
-Needs [Foundry](https://book.getfoundry.sh/getting-started/installation) and Node 20+. Full Anvil + Vercel notes: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+Needs [Foundry](https://book.getfoundry.sh/getting-started/installation) and Node 20+. **Deploy contracts + UI (Sepolia / Anvil / Vercel):** [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ```bash
 cd contracts && forge test
@@ -91,9 +92,9 @@ npm run typecheck
 
 ## Vercel (frontend)
 
-The Next.js app lives in **`web/`**. Production must use **Root Directory = `web`**. Deploying the git repo from the Origin root (no `package.json` there) yields a stale or empty Next app — `/demo` 404s even when v3 env vars are set.
+The Next.js app lives in **`web/`**. Production must use **Root Directory = `web`** (or a tarball with `package.json` at the archive root). Deploying the git repo from the Origin root (no `package.json` there) yields a stale or empty Next app — `/demo` 404s even when v3 env vars are set. Full checklist: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
-Public v3 defaults are in `web/.env.production`. Packaged source for `vercel deploy`: [`artifacts/v3-web-deploy.tgz`](artifacts/v3-web-deploy.tgz). Steps: [`artifacts/v3-web-deploy/WEB_DEPLOY.md`](artifacts/v3-web-deploy/WEB_DEPLOY.md).
+Public v3 defaults are in tracked `web/.env.production` (no secrets) and `web/.env.example`. Packaged source for `vercel deploy`: [`artifacts/v3-web-deploy.tgz`](artifacts/v3-web-deploy.tgz). Tarball-only steps: [`artifacts/v3-web-deploy/WEB_DEPLOY.md`](artifacts/v3-web-deploy/WEB_DEPLOY.md).
 
 ```bash
 cd web
