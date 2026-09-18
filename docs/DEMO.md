@@ -109,4 +109,4 @@ v3 has **no** `completeMilestone`. Always `attestMilestone`.
 
 ## Local Anvil
 
-See [`DEPLOY.md`](./DEPLOY.md) “Full local demo”. Override `NEXT_PUBLIC_ESCROW_ADDRESS` and `NEXT_PUBLIC_USDC_ADDRESS` after `forge script`. Optional `script/CreateDemo.s.sol` for a local id `0`.
+See [`DEPLOY.md`](./DEPLOY.md) §1a (local Anvil). Override `NEXT_PUBLIC_ESCROW_ADDRESS` and `NEXT_PUBLIC_USDC_ADDRESS` after `forge script`. Optional `script/CreateDemo.s.sol` for a local id `0`.

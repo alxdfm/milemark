@@ -1,6 +1,6 @@
 # App (frontend)
 
-Canonical map of the Next.js client. Contract rules: [`ARCHITECTURE.md`](./ARCHITECTURE.md). Env and Vercel: [`DEPLOY.md`](./DEPLOY.md). Judge kit: [`DEMO.md`](./DEMO.md).
+Canonical map of the Next.js client. Contract rules: [`ARCHITECTURE.md`](./ARCHITECTURE.md). Deploy, env, and Vercel: [`DEPLOY.md`](./DEPLOY.md). Judge kit: [`DEMO.md`](./DEMO.md).
 
 Stack: **Next.js App Router** (`web/package.json` name `milemark-web`, Next `16.3.5`, React `19`, **wagmi** `3` / **viem** `2`), Tailwind v4, injected wallet only. Dev server: **`http://localhost:43147`** (`next dev --port 43147`).
 
@@ -176,7 +176,7 @@ All public. Documented fully in [`DEPLOY.md`](./DEPLOY.md).
 | `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` | `"0"` |
 | `NEXT_PUBLIC_ESCROW_FROM_BLOCK` | `309949200` |
 
-There is no committed `web/.env.production` (gitignored). Production must set the same public values (or rely on these defaults baked into the client).
+Tracked `web/.env.production` holds the same public values (no secrets). Vercel dashboard env overrides at build time. Unset vars fall back to the defaults above. Full required-vs-optional matrix: [`DEPLOY.md`](./DEPLOY.md).
 
 ## Clean Architecture rule
 

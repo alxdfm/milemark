@@ -9,7 +9,7 @@ Onchain milestone escrow. **v3 ABI** on Arbitrum Sepolia. This file is the proje
 - `contracts/` Foundry: `MilestoneEscrow.sol` (N-of-M quorum + light dispute window), 44 unit tests, `Deploy.s.sol`, `CreateDemo.s.sol`
 - `web/` Next.js App Router: home, `/demo`, create (templates + quorum + window), campaign-by-id (attest, dispute, claim, reclaim), `POST /rpc` proxy
 - Clean Architecture: domain in `web/lib/milemark/` (including `lifecycle.ts`), ABI/addresses in `web/lib/contracts/`
-- Docs: `README.md`, `docs/ARCHITECTURE.md`, `docs/APP.md`, `docs/DEMO.md`, `docs/DEPLOY.md`, `docs/AUDIT.md`
+- Docs: `README.md`, `docs/ARCHITECTURE.md`, `docs/APP.md`, `docs/DEMO.md`, `docs/DEPLOY.md` (canonical deploy), `docs/AUDIT.md`, `docs/AUDIT-DEPLOY.md`
 
 ## Quality gates
 
