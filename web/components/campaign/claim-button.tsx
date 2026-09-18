@@ -12,11 +12,13 @@ export function ClaimButton({
   campaignId,
   amount,
   disabled,
+  label,
   onSettled,
 }: {
   campaignId: bigint;
   amount: bigint;
   disabled?: boolean;
+  label?: string;
   onSettled?: () => void;
 }) {
   const { writeContract, data: hash, isPending, error, reset } =
@@ -44,7 +46,7 @@ export function ClaimButton({
       >
         {isPending || receipt.isLoading
           ? "Claiming…"
-          : `Claim ${formatUsdc(amount)} USDC`}
+          : (label ?? `Claim ${formatUsdc(amount)} USDC`)}
       </Button>
       <TxFeedback
         hash={hash}

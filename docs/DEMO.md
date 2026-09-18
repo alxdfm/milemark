@@ -7,7 +7,7 @@ Walkthrough for the live **v3** escrow on Arbitrum Sepolia.
 | App | https://milemark-pearl.vercel.app |
 | Demo kit | https://milemark-pearl.vercel.app/demo |
 | Create | https://milemark-pearl.vercel.app/create |
-| Featured campaign | https://milemark-pearl.vercel.app/campaign/0 |
+| Featured campaign | https://milemark-pearl.vercel.app/campaign/0 (`NEXT_PUBLIC_DEMO_CAMPAIGN_ID`, currently **1-of-1 smoke**) |
 | Escrow v3 | [`0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC`](https://sepolia.arbiscan.io/address/0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC) |
 | Deploy tx | [`0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464`](https://sepolia.arbiscan.io/tx/0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464) |
 | Campaign 0 create tx | [`0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4`](https://sepolia.arbiscan.io/tx/0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4) (block `309949346`) |
@@ -32,13 +32,29 @@ Verified by `getCampaign(0)` / `getMilestones` / `getAttestors` (2026-09-17):
 | Total locked | 3 USDC |
 | Deadline | ~2026-10-01 20:07 UTC |
 
-This is **not** the create-form “Judge demo (2-of-3, 60s)” template and **not** the default output of `script/CreateDemo.s.sol`.
+This is **not** the create-form “Judge demo (2-of-3, 60s)” template, **not** `CreateDemo.s.sol` defaults, and **not** `CreateFeaturedDemo.s.sol`. Keep labeling id `0` as the original 1-of-1 smoke even after a featured 2-of-3 is minted.
 
 At audit time neither mile was completed. State may change if someone attests/claims/reclaims — read the campaign page, not this table, for live flags.
 
+## Featured 2-of-3 (operator)
+
+Live `campaignCount` is `1` as of this writing. Minting a 2-of-3 featured exhibit needs a funded Sepolia key (this repo does not ship one).
+
+```bash
+cd contracts
+ESCROW_ADDRESS=0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC \
+ATTESTOR_2=0x<unique-2> ATTESTOR_3=0x<unique-3> \
+PRIVATE_KEY=$PRIVATE_KEY \
+forge script script/CreateFeaturedDemo.s.sol \
+  --rpc-url ${ARB_SEPOLIA_RPC_URL:-https://sepolia-rollup.arbitrum.io/rpc} \
+  --broadcast --chain 421614
+```
+
+Then set `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` to the printed id (Vercel + `web/.env.production`) and **rebuild**. `/demo` reads the featured campaign onchain and will describe it as 2-of-3 only when quorum and attestor count match. Until then, Path B below is how judges run a live 2-of-3.
+
 ## Wallet roles cheat-sheet
 
-### Path A — use featured id `0` (fastest, one wallet)
+### Path A — use featured id (env `NEXT_PUBLIC_DEMO_CAMPAIGN_ID`, default `0`)
 
 If you control the deployer `0x3A17…84D4`:
 
@@ -72,11 +88,11 @@ Need **Arbitrum Sepolia ETH** (gas) and **Circle testnet USDC**.
 2. **Either** open https://milemark-pearl.vercel.app/campaign/0 (Path A) **or** https://milemark-pearl.vercel.app/create and pick **Judge demo (2-of-3, 60s)**. Fill beneficiary + attestors. Quorum 2, window 60s. **Approve**, then **Create**. Copy `/campaign/{id}`.
 3. **Attest.** Switch to attestor A. Attest milestone **2** first (any-order) with `ipfs://…` or `https://…`. Switch to attestor B (Path B) and attest the same mile (empty evidence is fine). First non-empty URI sticks. Activity shows `MilestoneAttested` then `MilestoneCompleted`. On Path A a single attest hits quorum.
 4. **Window.** Claim stays blocked for 60s. Wait until the mile is claimable, **or** connect sponsor / an attestor and **Dispute** (blocks claim; sponsor reclaims after the deadline).
-5. Switch to the **beneficiary**. **Claim**. A second claim reverts (`NothingToClaim`). Leave a mile incomplete if you want to show **Reclaim** after the deadline.
+5. Switch to the **beneficiary**. **Claim** — one tx collects every currently claimable mile (the card lists them and the total). A second claim reverts (`NothingToClaim`). Leave a mile incomplete if you want to show **Reclaim** after the deadline.
 
 `challengeWindow = 0` skips step 4 (claimable in the same timestamp as quorum). Use that for lightning tests.
 
-What to click (campaign page): evidence field → **Attest / Mark complete** → optional **Dispute** → **Claim N USDC** → later **Reclaim N USDC**. Role chips show **you** on the seats the connected wallet holds.
+What to click (campaign page): evidence field → **Attest / Mark complete** → optional **Dispute** (countdown + who-can-dispute copy) → **Claim all (N miles)** → later **Reclaim N USDC**. Role chips show **you** on the seats the connected wallet holds.
 
 ## Cast-only (new campaign)
 
@@ -109,4 +125,4 @@ v3 has **no** `completeMilestone`. Always `attestMilestone`.
 
 ## Local Anvil
 
-See [`DEPLOY.md`](./DEPLOY.md) §1a (local Anvil). Override `NEXT_PUBLIC_ESCROW_ADDRESS` and `NEXT_PUBLIC_USDC_ADDRESS` after `forge script`. Optional `script/CreateDemo.s.sol` for a local id `0`.
+See [`DEPLOY.md`](./DEPLOY.md) §1a (local Anvil). Override `NEXT_PUBLIC_ESCROW_ADDRESS` and `NEXT_PUBLIC_USDC_ADDRESS` after `forge script`. Optional `script/CreateDemo.s.sol` for a local 1-of-1 id `0`. Optional `script/CreateFeaturedDemo.s.sol` (Anvil accounts 1 and 2 as `ATTESTOR_2` / `ATTESTOR_3`) for a local 2-of-3.

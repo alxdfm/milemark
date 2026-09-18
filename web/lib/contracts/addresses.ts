@@ -26,13 +26,19 @@ export const CIRCLE_USDC_ARB_SEPOLIA =
   "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d" as const satisfies Address;
 
 /**
- * Featured live demo campaign on the v3 escrow.
- * Id 0 is a hand-crafted 1-of-1 (not CreateDemo.s.sol defaults). Create tx
+ * Featured live demo campaign on the v3 escrow (`NEXT_PUBLIC_DEMO_CAMPAIGN_ID`).
+ * Default id `0` is the original 1-of-1 smoke (title "MM v3 Demo Quorum",
+ * 3 USDC, 60s window). Create tx
  * 0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4 at block 309949346.
+ * A 2-of-3 featured exhibit is minted with `script/CreateFeaturedDemo.s.sol`;
+ * then set this env to the printed id and rebuild. Do not describe id 0 as 2-of-3.
  */
 export const DEMO_CAMPAIGN_ID = (
   process.env.NEXT_PUBLIC_DEMO_CAMPAIGN_ID ?? "0"
 ).trim();
+
+/** Historical 1-of-1 smoke campaign on live v3. */
+export const SMOKE_CAMPAIGN_ID = "0";
 
 function readAddress(raw: string | undefined, fallback: Address): Address {
   const value = (raw ?? "").trim();

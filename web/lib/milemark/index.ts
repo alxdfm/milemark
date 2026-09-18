@@ -26,7 +26,12 @@ export {
   toNumber,
 } from "./parse";
 export { resolveRoles, type CampaignRoles } from "./roles";
-export { claimReason, disputeReason, reclaimReason } from "./reasons";
+export {
+  claimReason,
+  disputeReason,
+  reclaimReason,
+  DISPUTE_WHO,
+} from "./reasons";
 export {
   MAX_ATTESTORS,
   parseDeadlineSec,
@@ -40,8 +45,16 @@ export {
 export {
   canDispute,
   challengeEndsAt,
+  claimableMiles,
+  claimableTotal,
+  challengingMiles,
+  disputedMiles,
+  formatChallengeRemaining,
   formatWindow,
+  indexMilestones,
   isChallengeOpen,
   isMileClaimable,
+  showDisputeControls,
+  type IndexedMilestone,
 } from "./lifecycle";
 export { extractErrorMessage, friendlyError } from "./errors";

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useReadContract } from "wagmi";
 import { CopyLink, QrBlock } from "@/components/demo/copy-link";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,10 +10,20 @@ import {
   LIVE_ESCROW_V2,
   LIVE_ESCROW_V3,
   CIRCLE_USDC_ARB_SEPOLIA,
+  SMOKE_CAMPAIGN_ID,
   isEscrowConfigured,
+  milestoneEscrowAbi,
 } from "@/lib/contracts";
-import { explorerAddress, ESCROW_ADDRESS } from "@/lib/chains";
-import { ZERO_ADDRESS, sameAddress } from "@/lib/milemark";
+import { explorerAddress, ESCROW_ADDRESS, milemarkChain } from "@/lib/chains";
+import {
+  ZERO_ADDRESS,
+  formatUsdc,
+  formatWindow,
+  parseAttestors,
+  parseCampaignId,
+  parseCampaignView,
+  sameAddress,
+} from "@/lib/milemark";
 
 const USDC = CIRCLE_USDC_ARB_SEPOLIA;
 const escrow = isEscrowConfigured ? ESCROW_ADDRESS : LIVE_ESCROW_V3;
@@ -41,7 +52,7 @@ const STEPS = [
   {
     n: "04",
     title: "Claim (beneficiary, ~20s)",
-    body: "Connect the beneficiary. Claim released USDC. A second claim reverts (NothingToClaim). Wallet USDC increases.",
+    body: "Connect the beneficiary. Claim collects every currently claimable mile in one transaction. A second claim reverts (NothingToClaim). Wallet USDC increases.",
   },
   {
     n: "05",
@@ -61,9 +72,85 @@ const ROLES = [
   },
   {
     role: "Beneficiary",
-    does: "claim the sum of completed, undisputed miles whose challenge window has elapsed",
+    does: "claim the sum of completed, undisputed miles whose challenge window has elapsed — one tx for all currently claimable miles",
   },
 ];
+
+function FeaturedFacts() {
+  const id = parseCampaignId(DEMO_CAMPAIGN_ID);
+  const campaign = useReadContract({
+    address: ESCROW_ADDRESS,
+    abi: milestoneEscrowAbi,
+    functionName: "getCampaign",
+    args: id !== null ? [id] : undefined,
+    chainId: milemarkChain.id,
+    query: { enabled: id !== null && isEscrowConfigured, retry: 1 },
+  });
+  const attestorsQuery = useReadContract({
+    address: ESCROW_ADDRESS,
+    abi: milestoneEscrowAbi,
+    functionName: "getAttestors",
+    args: id !== null ? [id] : undefined,
+    chainId: milemarkChain.id,
+    query: { enabled: id !== null && isEscrowConfigured, retry: 1 },
+  });
+
+  const view = parseCampaignView(campaign.data);
+  const attestors = parseAttestors(attestorsQuery.data);
+  const isSmoke = DEMO_CAMPAIGN_ID === SMOKE_CAMPAIGN_ID;
+  const quorumOf = view
+    ? `${view.quorum}-of-${attestors.length || "?"}`
+    : isSmoke
+      ? "1-of-1"
+      : "onchain";
+
+  let shape: string;
+  if (!view) {
+    shape = isSmoke
+      ? "Original 1-of-1 smoke campaign (not 2-of-3 until CreateFeaturedDemo is broadcast and NEXT_PUBLIC_DEMO_CAMPAIGN_ID is updated)."
+      : `Featured id ${DEMO_CAMPAIGN_ID} — waiting on chain read.`;
+  } else if (view.quorum === 1 && attestors.length <= 1) {
+    shape = "This is the original 1-of-1 smoke exhibit, not a 2-of-3.";
+  } else {
+    shape = `Live ${quorumOf} exhibit.`;
+  }
+
+  return (
+    <div className="rounded-xl border border-line bg-surface p-5 text-sm leading-6 text-muted">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent">
+        Featured campaign · id {DEMO_CAMPAIGN_ID}
+      </p>
+      <p className="mt-2 text-foreground">
+        {view ? view.title : "MileMark demo"}{" "}
+        <span className="text-muted">
+          · {quorumOf}
+          {view
+            ? ` · ${formatWindow(Number(view.challengeWindow))} window · claimable ${formatUsdc(view.claimable)} USDC`
+            : ""}
+        </span>
+      </p>
+      <p className="mt-2">{shape}</p>
+      {DEMO_CAMPAIGN_ID !== SMOKE_CAMPAIGN_ID ? (
+        <p className="mt-2">
+          Historical smoke campaign{" "}
+          <Link
+            className="text-accent hover:underline"
+            href={`/campaign/${SMOKE_CAMPAIGN_ID}`}
+          >
+            id {SMOKE_CAMPAIGN_ID}
+          </Link>{" "}
+          remains the original 1-of-1 (title “MM v3 Demo Quorum”, 3 USDC, 60s).
+        </p>
+      ) : (
+        <p className="mt-2">
+          For a live 2-of-3 walkthrough, use Create → Judge demo, or the operator
+          runs <code className="font-mono text-xs">CreateFeaturedDemo.s.sol</code>{" "}
+          and sets <code className="font-mono text-xs">NEXT_PUBLIC_DEMO_CAMPAIGN_ID</code>.
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function DemoKit() {
   const [origin, setOrigin] = useState("");
@@ -73,6 +160,7 @@ export function DemoKit() {
 
   const appUrl = origin || "https://<this-app>";
   const demoCampaignPath = `/campaign/${DEMO_CAMPAIGN_ID}`;
+  const smokePath = `/campaign/${SMOKE_CAMPAIGN_ID}`;
   const createUrl = `${appUrl}/create`;
   const demoUrl = `${appUrl}/demo`;
   const campaignUrl = `${appUrl}${demoCampaignPath}`;
@@ -89,18 +177,20 @@ export function DemoKit() {
             Shareable demo kit
           </h1>
           <p className="max-w-xl text-sm leading-6 text-muted">
-            Create → attest to quorum → wait or dispute → claim → reclaim.
-            Everything is onchain on Arbitrum Sepolia. No indexer, no offchain DB.
-            Featured id {DEMO_CAMPAIGN_ID} is a live 1-of-1, 60s window, 3 USDC
-            campaign (same wallet can be sponsor, attestor, and beneficiary). The
-            walkthrough below is how to fund a <em>new</em> 2-of-3 campaign.
+            Create → attest to quorum → wait or dispute → claim (all currently
+            claimable miles) → reclaim. Everything is onchain on Arbitrum Sepolia.
+            No indexer, no offchain DB. Featured id is{" "}
+            <code className="font-mono text-xs">{DEMO_CAMPAIGN_ID}</code> via{" "}
+            <code className="font-mono text-xs">NEXT_PUBLIC_DEMO_CAMPAIGN_ID</code>
+            . Copy below is driven by the live campaign — it does not claim id 0
+            is 2-of-3 unless the chain says so.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg">
               <Link href="/create">Start the script</Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
-              <Link href={demoCampaignPath}>Open live campaign</Link>
+              <Link href={demoCampaignPath}>Open featured campaign</Link>
             </Button>
           </div>
         </div>
@@ -110,11 +200,19 @@ export function DemoKit() {
         </div>
       </section>
 
+      <FeaturedFacts />
+
       <section className="grid gap-3">
         <h2 className="font-display text-xl font-semibold">Copyable URLs</h2>
         <CopyLink value={demoUrl} label="Copy demo kit" />
         <CopyLink value={createUrl} label="Copy create" />
-        <CopyLink value={campaignUrl} label="Copy campaign" />
+        <CopyLink value={campaignUrl} label="Copy featured campaign" />
+        {DEMO_CAMPAIGN_ID !== SMOKE_CAMPAIGN_ID ? (
+          <CopyLink
+            value={`${appUrl}${smokePath}`}
+            label="Copy historical smoke (id 0)"
+          />
+        ) : null}
         {escrowHref ? (
           <CopyLink value={escrowHref} label="Copy Arbiscan" />
         ) : null}
@@ -172,8 +270,16 @@ export function DemoKit() {
             </Link>
             {" · "}
             <Link className="text-accent hover:underline" href={demoCampaignPath}>
-              campaign {DEMO_CAMPAIGN_ID}
+              featured {DEMO_CAMPAIGN_ID}
             </Link>
+            {DEMO_CAMPAIGN_ID !== SMOKE_CAMPAIGN_ID ? (
+              <>
+                {" · "}
+                <Link className="text-accent hover:underline" href={smokePath}>
+                  smoke {SMOKE_CAMPAIGN_ID}
+                </Link>
+              </>
+            ) : null}
           </li>
           <li>
             Escrow v3:{" "}

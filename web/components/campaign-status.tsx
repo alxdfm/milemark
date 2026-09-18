@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCampaign } from "@/hooks/use-campaign";
+import { useNowSec } from "@/hooks/use-now-sec";
+import { ESCROW_FROM_BLOCK } from "@/lib/chains";
 import { CampaignLookup } from "@/components/campaign-lookup";
 import {
   Card,
@@ -16,15 +17,6 @@ import { MilestoneList } from "./campaign/milestone-list";
 import { ClaimCard } from "./campaign/claim-card";
 import { ReclaimCard } from "./campaign/reclaim-card";
 import { CampaignTimeline } from "./campaign/timeline";
-
-function useNowSec(intervalMs = 1000) {
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-  useEffect(() => {
-    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs]);
-  return now;
-}
 
 export function CampaignStatus({ campaignId }: { campaignId: string }) {
   const campaign = useCampaign(campaignId);
@@ -134,6 +126,7 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
         nowSec={nowSec}
         isAttestor={roles.isAttestor}
         isSponsor={roles.isSponsor}
+        connected={roles.connected}
         attestedFlags={attestedFlags}
         onSettled={refetch}
       />
@@ -142,19 +135,25 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
         claimable={view.claimable}
         connected={roles.connected}
         isBeneficiary={roles.isBeneficiary}
+        milestones={milestones}
+        challengeWindow={view.challengeWindow}
+        nowSec={nowSec}
         onSettled={refetch}
       />
       <Card>
         <CardHeader>
           <CardTitle>Activity</CardTitle>
           <CardDescription>
-            Onchain events for this campaign (no indexer).
+            Onchain events for this campaign (no indexer). fromBlock{" "}
+            <code className="font-mono text-xs">{ESCROW_FROM_BLOCK.toString()}</code>
+            .
           </CardDescription>
         </CardHeader>
         <CardContent>
           <CampaignTimeline
             campaignId={id}
             refreshKey={campaign.refreshKey}
+            campaignExists
           />
         </CardContent>
       </Card>

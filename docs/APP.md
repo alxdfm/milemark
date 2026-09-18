@@ -28,7 +28,7 @@ Verified 2026-09-17: `/demo` returns 200; proxy `eth_call campaignCount()` retur
 | `/demo` | `web/app/demo/page.tsx` | Judge kit: QR, copyable URLs, role cheat-sheet, 5-step script, live v3 + frozen v2 links. |
 | `POST /rpc` | `web/app/rpc/route.ts` | Same-origin JSON-RPC proxy to `NEXT_PUBLIC_RPC` (20s timeout). Not a REST API. |
 
-Root layout (`web/app/layout.tsx`): fonts (Geist, Syne), `Providers` (wagmi + react-query), `ConfigBanner` (only if escrow address is missing / is v1 / is v2), `Header`, footer (“Arbitrum Open House Singapore Online Buildathon”). `lang="en"`.
+Root layout (`web/app/layout.tsx`): fonts (Geist, Syne), `Providers` (wagmi + react-query), `ConfigBanner` (amber, non-blocking: missing/v1/v2 escrow, wallet chain ≠ expected, `escrow.usdc()` ≠ `NEXT_PUBLIC_USDC_ADDRESS`, known-bad `fromBlock`), `Header`, footer (“Arbitrum Open House Singapore Online Buildathon”). `lang="en"`.
 
 Header nav: Create, Demo, chain name chip, `ConnectWallet` (injected; switch-chain if `chainId !== milemarkChain.id`).
 
@@ -56,7 +56,7 @@ Disabled-button **reasons** are pure domain functions (also shown as helper copy
 
 | Action | Helper | Typical copy |
 |---|---|---|
-| Claim | `claimReason` | Connect beneficiary / only beneficiary / wait for quorum+window |
+| Claim | `claimReason` | Connect beneficiary / only beneficiary / wait for quorum+window / **in challenge** / **disputed** |
 | Reclaim | `reclaimReason` | Connect sponsor / only sponsor / deadline not passed or nothing left |
 | Dispute | `disputeReason` | Connect sponsor or attestor / not quorum yet / already disputed / window closed |
 | Attest | inline in `MilestoneList` | Disabled if not attestor, already attested, completed, or reclaimed. Hint: “Connect a listed attestor wallet to attest.” |
@@ -79,7 +79,7 @@ On create success the client parses `CampaignCreated` logs with viem `parseEvent
 - `fromBlock`: `ESCROW_FROM_BLOCK` (`NEXT_PUBLIC_ESCROW_FROM_BLOCK` or **`309949200`**)
 - `args: { campaignId }`
 
-Logs are merged, sorted by `(blockNumber, logIndex)`, and linked to Arbiscan. If `fromBlock` is **after** the create block, the feed can show “No events indexed” even though `getCampaign` succeeds. That is why `309949351` must not be the current fromBlock (campaign 0 was created at **`309949346`**).
+Logs are merged, sorted by `(blockNumber, logIndex)`, and linked to Arbiscan. If `fromBlock` is **after** the create block, the feed warns that the campaign exists but the log window missed `CampaignCreated`. That is why `309949351` must not be the current fromBlock (campaign 0 was created at **`309949346`**).
 
 ## `lib/milemark` (pure domain)
 
@@ -91,7 +91,7 @@ Logs are merged, sorted by `(blockNumber, logIndex)`, and linked to Arbiscan. If
 | `parse.ts` | Campaign id (`/^\d+$/`), ABI tuple/named-struct decoding including `view_` wrapper |
 | `roles.ts` | `resolveRoles` |
 | `reasons.ts` | Disabled claim/reclaim/dispute copy |
-| `lifecycle.ts` | Challenge window math, `canDispute`, `formatWindow` |
+| `lifecycle.ts` | Challenge window math, `canDispute`, `claimableMiles` / `challengingMiles` / `disputedMiles`, `formatChallengeRemaining` |
 | `create.ts` | Draft validation, `MAX_ATTESTORS = 32` (must match Solidity) |
 | `errors.ts` | Map custom error names + a few wallet strings to friendly English |
 | `index.ts` | Barrel |
@@ -100,11 +100,13 @@ Logs are merged, sorted by `(blockNumber, logIndex)`, and linked to Arbiscan. If
 
 `web/lib/links.ts`: clickable `ipfs://` / `ipns://` / `http(s)`. Other schemes show as “not browser-openable”.
 
-`web/lib/templates.ts`: create-form presets (not onchain). Default template is **Judge demo (2-of-3, 60s)** — this is **not** live campaign 0.
+`web/lib/templates.ts`: **single source** for create-form presets (not onchain). Default template is **Judge demo (2-of-3, 60s)** — this is **not** live campaign 0.
+
+`web/lib/config-guardrails.ts`: pure warnings for wallet chain, USDC mismatch, fromBlock footguns.
 
 `web/lib/abi.ts`: shim re-export of `web/lib/contracts/abi.ts`.
 
-`web/lib/contracts/addresses.ts`: `LIVE_ESCROW_V3`, `LIVE_ESCROW_V2`, `OBSOLETE_ESCROW_V1`, Circle USDC, `ESCROW_FROM_BLOCK`, `DEMO_CAMPAIGN_ID`. `isEscrowConfigured` is false for zero / v1 / v2 addresses.
+`web/lib/contracts/addresses.ts`: `LIVE_ESCROW_V3`, `LIVE_ESCROW_V2`, `OBSOLETE_ESCROW_V1`, Circle USDC, `ESCROW_FROM_BLOCK`, `DEMO_CAMPAIGN_ID`, `SMOKE_CAMPAIGN_ID`. `isEscrowConfigured` is false for zero / v1 / v2 addresses.
 
 ## Components
 
@@ -114,12 +116,12 @@ Logs are merged, sorted by `(blockNumber, logIndex)`, and linked to Arbiscan. If
 |---|---|
 | `campaign-status.tsx` | Container: load states, then header + miles + claim + timeline + reclaim |
 | `campaign/header-card.tsx` | Title, quorum M-of-N, window, brief link, deadline, role chips, progress, parties, released/claimable/paid |
-| `campaign/milestone-list.tsx` | Per-mile status, evidence link, attest + dispute |
+| `campaign/milestone-list.tsx` | Per-mile status, evidence link, attest + dispute (countdown, who-can-dispute, disputed styling) |
 | `campaign/complete-button.tsx` | **Writes `attestMilestone`.** Historical filename. Label “Mark complete” if `quorum <= 1`, else `Attest (count/quorum)`. Optional evidence input. |
-| `campaign/dispute-button.tsx` | Writes `dispute` |
-| `campaign/claim-card.tsx` / `claim-button.tsx` | Writes `claim` |
+| `campaign/dispute-button.tsx` | Writes `dispute(campaignId, index)` with tx feedback + disabled reason |
+| `campaign/claim-card.tsx` / `claim-button.tsx` | Writes `claim`; lists currently claimable miles + totals (one tx = all claimable) |
 | `campaign/reclaim-card.tsx` / `reclaim-button.tsx` | Writes `reclaim` |
-| `campaign/timeline.tsx` | Event feed |
+| `campaign/timeline.tsx` | Event feed; empty+exists warns about fromBlock |
 | `campaign/deadline-line.tsx` | Local-timezone deadline + reclaimable amount |
 | `campaign/role-chip.tsx` | “you” highlight when the connected wallet holds that role |
 | `complete-button.tsx`, `claim-button.tsx`, `reclaim-button.tsx` | Re-exports of the campaign/* buttons |
@@ -139,19 +141,23 @@ Logs are merged, sorted by `(blockNumber, logIndex)`, and linked to Arbiscan. If
 
 | File | Role |
 |---|---|
-| `demo/demo-kit.tsx` | Script, roles, QR, copy links, live v3 + frozen v2 |
+| `demo/demo-kit.tsx` | Script, roles, QR, copy links, onchain featured facts (will not call id 0 2-of-3 unless the chain says so), live v3 + frozen v2 |
 | `demo/copy-link.tsx` | Clipboard + QR (`QrBlock`) |
 
-**Shared:** `tx-feedback.tsx` (Arbiscan + `friendlyError`), `connect-wallet.tsx`, `config-banner.tsx`, `campaign-lookup.tsx`, `header.tsx`, `providers.tsx`, `ui/*` (button, card, input, label, separator).
+**Shared:** `tx-feedback.tsx` (Arbiscan + `friendlyError`), `connect-wallet.tsx`, `config-banner.tsx` (non-blocking chain/USDC/fromBlock/escrow banners), `campaign-lookup.tsx`, `header.tsx`, `providers.tsx`, `ui/*` (button, card, input, label, separator).
+
+**Hooks:** `use-campaign.ts`, `use-now-sec.ts` (1s tick for countdowns), `use-config-warnings.ts`.
 
 ## Templates (create form only)
+
+Single source: `web/lib/templates.ts`. Each preset fills attestors slots, quorum, challenge window, deadline, and USDC miles (v3 `createCampaign` fields).
 
 | id | Label | Quorum / slots | Window | Amounts (human USDC) |
 |---|---|---|---|---|
 | `judge` | Judge demo (2-of-3, 60s) | 2 / 3 | 60s | 4 + 6 |
-| `hackathon` | Hackathon prize | 1 / 1 | 1 day | 40 + 30 + 30 |
-| `retainer` | Retainer biweekly | 1 / 2 | 1 day | 50 + 50 |
-| `grant` | Grant AF-style | 2 / 3 | 1 day | 25 + 35 + 40 |
+| `freelance` | Freelance | 2 / 3 | 1 day | 20 + 50 + 30 |
+| `grant` | Grant | 2 / 3 | 1 day | 25 + 35 + 40 |
+| `delivery` | Delivery | 2 / 2 | 1 hour | 40 + 60 |
 
 Window presets: 0 (instant claim), 60s, 1h, 1d.
 
@@ -159,9 +165,10 @@ Window presets: 0 (instant claim), 60s, 1h, 1d.
 
 Do not confuse these:
 
-1. **Live id `0`** on v3 — 1-of-1, 60s window, 3 USDC, title `MM v3 Demo Quorum`. Same deployer wallet is sponsor, beneficiary, and the only attestor. See [`DEMO.md`](./DEMO.md).
+1. **Live id `0`** on v3 — 1-of-1, 60s window, 3 USDC, title `MM v3 Demo Quorum`. Same deployer wallet is sponsor, beneficiary, and the only attestor. See [`DEMO.md`](./DEMO.md). Keep this labeled as the original smoke campaign.
 2. **Create-form “Judge demo (2-of-3, 60s)”** — a *new* campaign the judge funds with three attestor addresses.
-3. **`script/CreateDemo.s.sol`** — Foundry helper; defaults 4+6 USDC and title `MileMark v3 demo`. Running it **now** would create id `1`, not rewrite id `0`.
+3. **`script/CreateDemo.s.sol`** — Foundry 1-of-1 helper; defaults 4+6 USDC and title `MileMark v3 demo`. Running it **now** would create id `1`, not rewrite id `0`.
+4. **`script/CreateFeaturedDemo.s.sol`** — Foundry 2-of-3 featured mint (1h window, 3+4+3 USDC). Operator broadcasts, then sets `NEXT_PUBLIC_DEMO_CAMPAIGN_ID`.
 
 ## Config the UI reads
 

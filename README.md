@@ -12,12 +12,12 @@ Sponsors lock USDC into a titled campaign with ordered milestones (completion is
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Product, roles, lifecycle (mermaid), contract API/storage/events/errors/invariants, trust model |
 | [`docs/APP.md`](docs/APP.md) | Routes, components, hooks, `lib/milemark`, how the UI derives roles and disabled buttons |
-| [`docs/DEMO.md`](docs/DEMO.md) | Judge script, live campaign `0` facts, wallet cheat-sheet |
+| [`docs/DEMO.md`](docs/DEMO.md) | Judge script, live campaign `0` (1-of-1 smoke), featured id env, 2-of-3 mint |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | **Canonical deploy guide**: prerequisites, Foundry, fromBlock, Vercel Root Directory (`web/`), env matrix, smoke checks, failure modes |
 | [`docs/AUDIT-DEPLOY.md`](docs/AUDIT-DEPLOY.md) | Deploy-doc audit: gaps found → fixes (2026-09-18) |
 | [`artifacts/v3-web-deploy/WEB_DEPLOY.md`](artifacts/v3-web-deploy/WEB_DEPLOY.md) | Production tarball / Vercel rebuild notes |
 | [`docs/AUDIT.md`](docs/AUDIT.md) | Product/docs incongruence log (2026-09-17) |
-| [`SUBMISSION.md`](SUBMISSION.md) | One-pager for reviewers |
+| [`SUBMISSION.md`](SUBMISSION.md) | HackQuest one-pager (do not submit from this repo) |
 
 ## Live (current = v3 only)
 
@@ -30,7 +30,7 @@ Sponsors lock USDC into a titled campaign with ordered milestones (completion is
 | Deployer | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4` |
 | USDC (Circle testnet) | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
 | Demo kit | https://milemark-pearl.vercel.app/demo |
-| Demo campaign | id `0` · 1-of-1 · 60s window · 3 USDC · create tx [`0x9eb5776f…`](https://sepolia.arbiscan.io/tx/0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4) |
+| Demo campaign (featured) | id `0` until `CreateFeaturedDemo` is broadcast · currently **1-of-1 smoke** · 60s window · 3 USDC · create tx [`0x9eb5776f…`](https://sepolia.arbiscan.io/tx/0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4) |
 | Event fromBlock | `309949200` (deploy block `309949272`; campaign 0 create block `309949346`) |
 | Frozen v2 (do not wire) | [`0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207`](https://sepolia.arbiscan.io/address/0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207) |
 | Obsolete v1 (do not use) | `0x72b474DB34268281CD10db655cc1517C33973049` |
@@ -44,7 +44,7 @@ No judge video is checked into this repo; use `/demo`.
 1. **Sponsor** approves USDC and calls `createCampaign(beneficiary, attestors, quorum, title, briefURI, deadline, challengeWindow, descriptions, amounts)`. The sum of `amounts` is pulled in that transaction. Require `1 <= quorum <= unique(attestors).length`.
 2. **Attestor quorum (N-of-M)** — each listed address may call `attestMilestone(campaignId, index, evidenceURI)` **once** per mile. Completion is **any-order**. Empty evidence is allowed. **First non-empty evidence URI wins.** When `attestationCount >= quorum`, the contract emits `MilestoneAttested` then `MilestoneCompleted` and starts the challenge window.
 3. **Challenge window** — for `challengeWindow` seconds after completion, the sponsor or any listed attestor may `dispute(campaignId, index)`. Dispute is sticky (no onchain resolution) and blocks claim for that mile. `challengeWindow == 0` makes the mile claimable in the same timestamp.
-4. **Beneficiary** calls `claim(campaignId)` for the sum of completed, undisputed, unclaimed milestones whose window has elapsed. A second claim with nothing new reverts (`NothingToClaim`).
+4. **Beneficiary** calls `claim(campaignId)` for the sum of completed, undisputed, unclaimed milestones whose window has elapsed (**all currently claimable miles in one transaction**). A second claim with nothing new reverts (`NothingToClaim`).
 5. **After `block.timestamp > deadline`**, the sponsor calls `reclaim(campaignId)` for USDC still sitting on **incomplete or disputed** miles. Completed, undisputed, unclaimed amounts stay claimable by the beneficiary.
 
 Events: `CampaignCreated`, `MilestoneAttested`, `MilestoneCompleted`, `MilestoneDisputed`, `Claimed`, `Reclaimed`.
@@ -62,7 +62,8 @@ milemark/
 │   ├── src/mocks/MockERC20.sol
 │   ├── test/MilestoneEscrow.t.sol    # 44 test_* functions
 │   ├── script/Deploy.s.sol
-│   └── script/CreateDemo.s.sol
+│   ├── script/CreateDemo.s.sol           # 1-of-1 smoke
+│   └── script/CreateFeaturedDemo.s.sol   # 2-of-3 featured (operator)
 ├── web/                       Next.js App Router + wagmi/viem
 │   ├── app/                   /, /create, /campaign/[id], /demo, POST /rpc
 │   ├── lib/milemark/          pure domain

@@ -26,8 +26,10 @@ import {MockERC20} from "../src/mocks/MockERC20.sol";
 ///   PRIVATE_KEY=$PRIVATE_KEY forge script script/Deploy.s.sol \
 ///     --rpc-url $ARB_SEPOLIA_RPC_URL --broadcast --verify
 ///
-/// After deploy, optionally create a small demo campaign:
+/// After deploy, optionally create a small 1-of-1 smoke campaign:
 ///   ESCROW_ADDRESS=0x... forge script script/CreateDemo.s.sol --rpc-url $RPC --broadcast
+/// Featured 2-of-3 (requires ATTESTOR_2 + ATTESTOR_3):
+///   ESCROW_ADDRESS=0x... forge script script/CreateFeaturedDemo.s.sol --rpc-url $RPC --broadcast
 contract Deploy is Script {
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
