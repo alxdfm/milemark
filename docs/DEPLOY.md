@@ -225,7 +225,7 @@ If `usdc()` is not Circle USDC on Sepolia, the UI will approve the wrong token (
 
 ### Live id `0` (already onchain)
 
-Featured production campaign is **id `0`**: 1-of-1, 60s window, 3 USDC, title `MM v3 Demo Quorum`. It was **not** created by `CreateDemo.s.sol` or `CreateFeaturedDemo.s.sol`. Running either script against live v3 mints the **next** id (currently `1` if `campaignCount` is still `1`). Do not describe id `0` as 2-of-3.
+Featured production campaign is **id `0`**: 1-of-1, 60s window, 3 USDC, title `MM v3 Demo Quorum`. It was **not** created by `CreateDemo.s.sol` or `CreateFeaturedDemo.s.sol`. Running either script against live v3 mints the **next** id (`campaignCount` read `2` on 2026-09-20, so the next mint is id `2` — confirm with `make check-live`). Do not describe id `0` as 2-of-3.
 
 Verify id `0`:
 
