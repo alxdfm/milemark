@@ -6,3 +6,6 @@
 # Editors
 .idea/
 .vscode/
+
+# Vercel CLI (`vercel pull` in CI)
+.vercel

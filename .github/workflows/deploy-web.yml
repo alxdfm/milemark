@@ -1,0 +1,70 @@
+# Production deploys of web/ to Vercel. Runs only on a published release (or a
+# manual dispatch) — pushes to main do not deploy, see web/vercel.json.
+name: Deploy web
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+# Never let two production deploys race; a queued one waits instead of cancelling.
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy to Vercel
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      # Quality gates from docs/DEPLOY.md — fail before touching production.
+      - name: Typecheck
+        working-directory: web
+        run: npm run typecheck
+
+      # Reported, not enforced: 4 pre-existing react-hooks errors would block
+      # every release. docs/DEPLOY.md defines the gates without lint.
+      - name: Lint
+        working-directory: web
+        run: npm run lint
+        continue-on-error: true
+
+      # The Vercel project has Root Directory = web, so the CLI runs from the
+      # repo root and resolves web/ itself. Running it inside web/ would look
+      # for web/web/ and fail.
+      - name: Pull Vercel production config
+        run: npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build
+        run: npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy
+        id: deploy
+        run: |
+          url="$(npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $url" >> "$GITHUB_STEP_SUMMARY"
+
+      # /demo 404s when the Root Directory is wrong — the documented failure mode.
+      - name: Smoke check /demo
+        run: |
+          url="${{ steps.deploy.outputs.url }}"
+          code="$(curl -s -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 5 --retry-all-errors "$url/demo")"
+          echo "GET $url/demo -> $code"
+          test "$code" = "200"
