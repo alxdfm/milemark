@@ -54,7 +54,7 @@ npx vercel deploy --prod --yes --token "$VERCEL_TOKEN"
 ## Deploy from git (Origin `main`)
 
 1. Vercel project **Root Directory = `web`** (not repo root). Repo root has no Next `package.json`; that is why production 404s `/demo`.
-2. Connect Origin `callydus/milemark` `main` (or upload this tarball).
+2. Connect GitHub `alxdfm/milemark` `main` (or upload this tarball). Pushes do not deploy: `web/vercel.json` disables them, and production moves on a published release via `.github/workflows/deploy-web.yml`.
 3. Redeploy **without** using an old deployment cache if the previous SHA predates `/demo`.
 
 ## Local production build (what this artifact was checked with)
