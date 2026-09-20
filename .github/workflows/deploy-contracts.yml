@@ -1,0 +1,114 @@
+# Manual-only contract deploy. Never runs on push or release: every broadcast
+# creates a NEW escrow address and orphans the frontend env until it is updated.
+name: Deploy contracts (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: Target network
+        required: true
+        type: choice
+        options:
+          - arbitrum-sepolia
+      confirm:
+        description: Type DEPLOY to confirm a new escrow address will be created
+        required: true
+        type: string
+      verify:
+        description: Verify on Arbiscan (needs ARBISCAN_API_KEY)
+        type: boolean
+        default: true
+
+concurrency:
+  group: contracts-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: forge script Deploy.s.sol
+    runs-on: ubuntu-latest
+    environment: contracts-deploy
+    steps:
+      - name: Check confirmation
+        if: inputs.confirm != 'DEPLOY'
+        run: |
+          echo "::error::confirm must be exactly DEPLOY, got '${{ inputs.confirm }}'"
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      # Quality gate from docs/DEPLOY.md: 44 test_* functions must pass.
+      - name: Test
+        working-directory: contracts
+        run: forge test -vv
+
+      - name: Deploy
+        id: deploy
+        working-directory: contracts
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOY_PRIVATE_KEY }}
+          USDC_ADDRESS: ${{ vars.USDC_ADDRESS || '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d' }}
+          ARB_SEPOLIA_RPC_URL: ${{ vars.ARB_SEPOLIA_RPC_URL || 'https://sepolia-rollup.arbitrum.io/rpc' }}
+          ARBISCAN_API_KEY: ${{ secrets.ARBISCAN_API_KEY }}
+        run: |
+          verify=""
+          if [ "${{ inputs.verify }}" = "true" ] && [ -n "$ARBISCAN_API_KEY" ]; then
+            verify="--verify"
+          fi
+          forge script script/Deploy.s.sol \
+            --rpc-url "$ARB_SEPOLIA_RPC_URL" \
+            --broadcast $verify
+
+          run_json="broadcast/Deploy.s.sol/421614/run-latest.json"
+          escrow="$(jq -r '[.transactions[] | select(.contractName == "MilestoneEscrow")] | last | .contractAddress' "$run_json")"
+          block="$(jq -r '.receipts | last | .blockNumber' "$run_json")"
+          echo "escrow=$escrow" >> "$GITHUB_OUTPUT"
+          echo "block=$block" >> "$GITHUB_OUTPUT"
+
+      - name: Confirm onchain state
+        working-directory: contracts
+        env:
+          ARB_SEPOLIA_RPC_URL: ${{ vars.ARB_SEPOLIA_RPC_URL || 'https://sepolia-rollup.arbitrum.io/rpc' }}
+        run: |
+          escrow="${{ steps.deploy.outputs.escrow }}"
+          echo "usdc()        $(cast call "$escrow" 'usdc()(address)' --rpc-url "$ARB_SEPOLIA_RPC_URL")"
+          echo "campaignCount $(cast call "$escrow" 'campaignCount()(uint256)' --rpc-url "$ARB_SEPOLIA_RPC_URL")"
+
+      # The new address is useless until the frontend points at it. Spell out
+      # the follow-up instead of leaving it to memory.
+      - name: Summary
+        run: |
+          escrow="${{ steps.deploy.outputs.escrow }}"
+          block="${{ steps.deploy.outputs.block }}"
+          from_block="$(( block > 200 ? block - 200 : 0 ))"
+          {
+            echo "## MilestoneEscrow deployed"
+            echo ""
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Address | \`$escrow\` |"
+            echo "| Deploy block | \`$block\` |"
+            echo "| Arbiscan | https://sepolia.arbiscan.io/address/$escrow |"
+            echo ""
+            echo "### Required follow-up (production is still on the old escrow)"
+            echo ""
+            echo '```'
+            echo "NEXT_PUBLIC_ESCROW_ADDRESS=$escrow"
+            echo "NEXT_PUBLIC_ESCROW_FROM_BLOCK=$from_block"
+            echo "NEXT_PUBLIC_DEMO_CAMPAIGN_ID=<id from CreateDemo / CreateFeaturedDemo>"
+            echo '```'
+            echo ""
+            echo "1. Update \`web/.env.production\` and \`LIVE_ESCROW_V3\` in \`web/lib/contracts/addresses.ts\`."
+            echo "2. Seed a campaign: \`make demo-sepolia\` or \`make featured-sepolia\`."
+            echo "3. Publish a release so **Deploy web** rebuilds with the new NEXT_PUBLIC_* values."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: broadcast-${{ github.run_id }}
+          path: contracts/broadcast/Deploy.s.sol/421614/
+          if-no-files-found: warn
