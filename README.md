@@ -14,6 +14,7 @@ Sponsors lock USDC into a titled campaign with ordered milestones (completion is
 | [`docs/APP.md`](docs/APP.md) | Routes, components, hooks, `lib/milemark`, how the UI derives roles and disabled buttons |
 | [`docs/DEMO.md`](docs/DEMO.md) | Judge script, live campaign `0` (1-of-1 smoke), featured id env, 2-of-3 mint |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | **Canonical deploy guide**: prerequisites, Foundry, fromBlock, Vercel Root Directory (`web/`), env matrix, smoke checks, failure modes |
+| [`docs/AUTOMATION.md`](docs/AUTOMATION.md) | Makefile targets, the two GitHub Actions workflows, required secrets, release flow, rollback |
 | [`docs/AUDIT-DEPLOY.md`](docs/AUDIT-DEPLOY.md) | Deploy-doc audit: gaps found → fixes (2026-09-18) |
 | [`artifacts/v3-web-deploy/WEB_DEPLOY.md`](artifacts/v3-web-deploy/WEB_DEPLOY.md) | Production tarball / Vercel rebuild notes |
 | [`docs/AUDIT.md`](docs/AUDIT.md) | Product/docs incongruence log (2026-09-17) |
@@ -72,7 +73,9 @@ milemark/
 │   └── components/{campaign,create,demo}/
 ├── artifacts/v3-deploy/       bytecode/ABI snapshot of the live create
 ├── artifacts/v3-web-deploy/   Vercel source tarball notes
+├── .github/workflows/         deploy-web.yml (release), deploy-contracts.yml (manual)
 ├── docs/
+├── Makefile                   make help lists every target
 ├── README.md
 └── SUBMISSION.md
 ```
@@ -82,20 +85,30 @@ milemark/
 Needs [Foundry](https://book.getfoundry.sh/getting-started/installation) and Node 20+. **Deploy contracts + UI (Sepolia / Anvil / Vercel):** [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ```bash
-cd contracts && forge test
+make test                     # forge test (44 test_* functions)
 
-cd web
-cp .env.example .env.local    # already points at live v3
-npm install
-npm run dev                   # http://localhost:43147
-npm run typecheck
+cp web/.env.example web/.env.local   # already points at live v3
+make web-install
+make web-dev                  # http://localhost:43147
+make gates                    # everything CI checks before a release
 ```
+
+`make help` lists all 21 targets. The underlying commands (`forge test`, `npm run dev`, ...) still work unchanged if you prefer them.
 
 ## Vercel (frontend)
 
 The Next.js app lives in **`web/`**. Production must use **Root Directory = `web`** (or a tarball with `package.json` at the archive root). Deploying the git repo from the Origin root (no `package.json` there) yields a stale or empty Next app — `/demo` 404s even when v3 env vars are set. Full checklist: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
-Public v3 defaults are in tracked `web/.env.production` (no secrets) and `web/.env.example`. Packaged source for `vercel deploy`: [`artifacts/v3-web-deploy.tgz`](artifacts/v3-web-deploy.tgz). Tarball-only steps: [`artifacts/v3-web-deploy/WEB_DEPLOY.md`](artifacts/v3-web-deploy/WEB_DEPLOY.md).
+Production deploys **on a published GitHub release**, never on push: `web/vercel.json` disables Vercel's own git deploys and [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml) runs typecheck, the build and a `/demo` smoke check. Required secrets and one-time setup: [`docs/AUTOMATION.md`](docs/AUTOMATION.md).
+
+```bash
+make gates                    # forge test + typecheck + production build
+make release VERSION=v1.2.3   # publishes the release, which deploys
+```
+
+Public v3 defaults are in tracked `web/.env.production` (no secrets) and `web/.env.example`. Packaged source: [`artifacts/v3-web-deploy.tgz`](artifacts/v3-web-deploy.tgz). Tarball-only steps: [`artifacts/v3-web-deploy/WEB_DEPLOY.md`](artifacts/v3-web-deploy/WEB_DEPLOY.md).
+
+To bypass the release flow and push a build by hand:
 
 ```bash
 cd web
