@@ -128,5 +128,5 @@ gates: test web-typecheck web-build ## Run every quality gate from docs/DEPLOY.m
 .PHONY: release
 release: ## Tag and publish a release, which triggers the Vercel deploy (VERSION=v1.2.3)
 	@[ -n "$(VERSION)" ] || { echo "VERSION=v1.2.3 is required"; exit 1; }
-	@git diff --quiet || { echo "working tree is dirty"; exit 1; }
+	@git diff --quiet && git diff --cached --quiet || { echo "working tree is dirty"; exit 1; }
 	gh release create $(VERSION) --generate-notes
