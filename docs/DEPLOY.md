@@ -34,38 +34,22 @@ Bytecode / ABI snapshot of that create: `artifacts/v3-deploy/` (`abi.json`, `byt
 
 ## Automation (Makefile + GitHub Actions)
 
-Everything below can still be run by hand; `make` only wraps the same commands. `make help` lists every target.
+`make help` lists every target. Full reference: [`AUTOMATION.md`](./AUTOMATION.md). Everything below can still be run by hand — `make` only wraps the same commands.
 
-| Task | Command | Notes |
-|---|---|---|
-| Quality gates | `make gates` | `forge test` + `npm run typecheck` + `npm run lint` + `npm run build` |
-| Local deploy | `make deploy-local` | Anvil + MockERC20, uses the public Anvil key |
-| Sepolia deploy | `make deploy-sepolia` | Prompts for `DEPLOY`; reads `contracts/.env` |
-| ABI sync | `make abi` | `forge build` then `scripts/export-abi.py` |
-| Live state | `make check-live` | `usdc()` / `campaignCount()` on the live v3 escrow |
-| Publish | `make release VERSION=v1.2.3` | Tags via `gh`, which fires the **Deploy web** workflow |
-
-### `.github/workflows/deploy-web.yml`
-
-Triggers on **`release: published`** (and manual dispatch). Pushes to `main` deploy nothing — `web/vercel.json` sets `git.deploymentEnabled.main = false`, so Vercel's own Git integration stays quiet and production only moves when a release is published.
-
-The job installs `web/`, runs typecheck (blocking) and lint (reported only — 4 pre-existing `react-hooks` errors would otherwise block every release, and the gates above do not include lint), then `vercel pull` / `vercel build` / `vercel deploy --prebuilt --prod`. The Vercel CLI runs from the **repo root**, not `web/`: the project's Root Directory is already `web`, so running it inside `web/` would resolve `web/web/`. Last step curls `/demo` and fails the run on anything but `200` — the documented symptom of a wrong Root Directory.
-
-Required repository secrets:
-
-| Secret | Where to get it |
+| Task | Command |
 |---|---|
-| `VERCEL_TOKEN` | https://vercel.com/account/tokens |
-| `VERCEL_ORG_ID` | `.vercel/project.json` after `npx vercel link`, or Team Settings |
-| `VERCEL_PROJECT_ID` | same `.vercel/project.json` |
+| Quality gates | `make gates` (`forge test` + typecheck + production build) |
+| Local deploy | `make deploy-local` |
+| Sepolia deploy | `make deploy-sepolia` (prompts for `DEPLOY`) |
+| ABI sync | `make abi` |
+| Live state | `make check-live` |
+| Publish | `make release VERSION=v1.2.3` |
 
-### `.github/workflows/deploy-contracts.yml`
+Production deploys on a **published release**, never on push: [`deploy-web.yml`](../.github/workflows/deploy-web.yml) runs typecheck, `vercel build`, `vercel deploy --prod` and a `/demo` smoke check. `web/vercel.json` sets `git.deploymentEnabled.main = false`, so Vercel's own Git integration stays quiet.
 
-**Manual only** (`workflow_dispatch`), never on push or release: each broadcast creates a new escrow address, and the frontend keeps pointing at the old one until its env is updated. The form asks for the network and for the literal string `DEPLOY`; anything else fails the run before checkout.
+Contracts deploy **manually only**: [`deploy-contracts.yml`](../.github/workflows/deploy-contracts.yml) is `workflow_dispatch` and requires typing `DEPLOY`, because each broadcast creates a new escrow address that orphans the frontend env until it is updated.
 
-It runs `forge test` first, broadcasts `Deploy.s.sol`, reads back `usdc()` and `campaignCount()`, uploads the `broadcast/` JSON as an artifact, and writes a summary with the new address plus the exact `NEXT_PUBLIC_*` values that must change next.
-
-Required secrets: `DEPLOY_PRIVATE_KEY` (testnet key with Arbitrum Sepolia ETH), optional `ARBISCAN_API_KEY`. Optional repo variables `USDC_ADDRESS` and `ARB_SEPOLIA_RPC_URL` override the Circle USDC and public RPC defaults.
+Secrets, repository variables and the one-time Vercel setup: [`AUTOMATION.md`](./AUTOMATION.md#first-time-setup).
 
 ---
 
