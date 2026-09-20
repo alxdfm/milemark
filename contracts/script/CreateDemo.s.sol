@@ -72,7 +72,7 @@ contract CreateDemo is Script {
             attestors,
             quorum,
             "MileMark v3 demo",
-            "https://github.com/callydus/milemark",
+            "https://github.com/alxdfm/milemark",
             deadline,
             window,
             descriptions,

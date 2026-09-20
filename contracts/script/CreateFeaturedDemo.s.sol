@@ -55,7 +55,7 @@ import {MilestoneEscrow} from "../src/MilestoneEscrow.sol";
 ///   cast send $ESCROW \
 ///     "createCampaign(address,address[],uint8,string,string,uint64,uint64,string[],uint256[])" \
 ///     $BENEFICIARY "[$ATTESTOR,$ATTESTOR_2,$ATTESTOR_3]" 2 \
-///     "MileMark featured 2-of-3" "https://github.com/callydus/milemark" \
+///     "MileMark featured 2-of-3" "https://github.com/alxdfm/milemark" \
 ///     $DEADLINE 3600 \
 ///     '["Public demo live on Sepolia","Two attestors reach quorum","Claim after the challenge window"]' \
 ///     '[3000000,4000000,3000000]' \
@@ -108,7 +108,7 @@ contract CreateFeaturedDemo is Script {
             attestors,
             quorum,
             "MileMark featured 2-of-3",
-            "https://github.com/callydus/milemark",
+            "https://github.com/alxdfm/milemark",
             deadline,
             window,
             descriptions,
