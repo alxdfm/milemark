@@ -13,6 +13,7 @@ Sponsors lock USDC into a titled campaign with ordered milestones (completion is
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Product, roles, lifecycle (mermaid), contract API/storage/events/errors/invariants, trust model |
 | [`docs/APP.md`](docs/APP.md) | Routes, components, hooks, `lib/milemark`, how the UI derives roles and disabled buttons |
 | [`docs/DEMO.md`](docs/DEMO.md) | Judge script, live campaign `0` (1-of-1 smoke), featured id env, 2-of-3 mint |
+| [`docs/LOCAL.md`](docs/LOCAL.md) | **Local runbook**: UI on `:43147` + live Arbitrum Sepolia v3, env, smoke curls, wallet, troubleshooting |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | **Canonical deploy guide**: prerequisites, Foundry, fromBlock, Vercel Root Directory (`web/`), env matrix, smoke checks, failure modes |
 | [`docs/AUTOMATION.md`](docs/AUTOMATION.md) | Makefile targets, the two GitHub Actions workflows, required secrets, release flow, rollback |
 | [`docs/AUDIT-DEPLOY.md`](docs/AUDIT-DEPLOY.md) | Deploy-doc audit: gaps found → fixes (2026-09-18) |
@@ -82,7 +83,7 @@ milemark/
 
 ## Local setup
 
-Needs [Foundry](https://book.getfoundry.sh/getting-started/installation) and Node 20+. **Deploy contracts + UI (Sepolia / Anvil / Vercel):** [`docs/DEPLOY.md`](docs/DEPLOY.md).
+Needs Node 20+ (and [Foundry](https://book.getfoundry.sh/getting-started/installation) for contract tests / `cast` smokes). **Day-to-day: local UI against live Sepolia v3** — full runbook, smoke curls, wallet notes: [`docs/LOCAL.md`](docs/LOCAL.md). Deploy / Anvil / Vercel: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ```bash
 make test                     # forge test (44 test_* functions)
@@ -93,7 +94,7 @@ make web-dev                  # http://localhost:43147
 make gates                    # everything CI checks before a release
 ```
 
-`make help` lists all 21 targets. The underlying commands (`forge test`, `npm run dev`, ...) still work unchanged if you prefer them.
+`make help` lists all targets. Keep `npm run dev` in a lasting terminal (background agent shells may abort). Underlying commands (`forge test`, `npm run dev`, …) work without Make.
 
 ## Vercel (frontend)
 

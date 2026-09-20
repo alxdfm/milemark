@@ -1,10 +1,11 @@
 # Demo (judges)
 
-Walkthrough for the live **v3** escrow on Arbitrum Sepolia.
+Walkthrough for the live **v3** escrow on Arbitrum Sepolia. Local UI pointing at the same escrow: [`LOCAL.md`](./LOCAL.md) (`http://localhost:43147`).
 
 | Item | Value |
 |---|---|
 | App | https://milemark-pearl.vercel.app |
+| Local app | http://localhost:43147 (see [`LOCAL.md`](./LOCAL.md)) |
 | Demo kit | https://milemark-pearl.vercel.app/demo |
 | Create | https://milemark-pearl.vercel.app/create |
 | Featured campaign | https://milemark-pearl.vercel.app/campaign/0 (`NEXT_PUBLIC_DEMO_CAMPAIGN_ID`, currently **1-of-1 smoke**) |

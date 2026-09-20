@@ -2,6 +2,8 @@
 
 This is the **canonical** newcomer guide for deploying MileMark contracts and the Next.js UI. Other notes (`README.md`, `artifacts/**`) point here.
 
+**Local UI against live Sepolia (no redeploy):** [`LOCAL.md`](./LOCAL.md) — env, `npm run dev`, smoke curls through `POST /rpc`, wallet, troubleshooting.
+
 Live product addresses and ABI semantics: [`ARCHITECTURE.md`](./ARCHITECTURE.md). Judge script: [`DEMO.md`](./DEMO.md). Frontend map: [`APP.md`](./APP.md). Gaps closed by this pass: [`AUDIT-DEPLOY.md`](./AUDIT-DEPLOY.md).
 
 Do **not** invent addresses or transaction hashes. Values below were checked against this repo and Arbitrum Sepolia on 2026-09-18.
@@ -334,6 +336,8 @@ Also update `LIVE_ESCROW_V3` in `web/lib/contracts/addresses.ts` when the **curr
 
 ## 4. Frontend — local
 
+**Full local runbook** (Sepolia defaults, smoke checklist, `/rpc` curls, wallet): [`LOCAL.md`](./LOCAL.md).
+
 ```bash
 cd web
 cp .env.example .env.local   # already Sepolia v3; override for Anvil
@@ -354,7 +358,7 @@ NEXT_PUBLIC_DEMO_CAMPAIGN_ID=0
 NEXT_PUBLIC_ESCROW_FROM_BLOCK=0
 ```
 
-`next dev` must be restarted after env changes. Header chip should read **Anvil** or **Arbitrum Sepolia** accordingly.
+`next dev` must be restarted after env changes. Header chip should read **Anvil** or **Arbitrum Sepolia** accordingly. Keep the process in a lasting terminal.
 
 ---
 
@@ -409,6 +413,8 @@ Faucet: deployer/sponsor needs **ETH + USDC** on Arbitrum Sepolia before create/
 - [ ] `cast logs --from-block $FROM ... CampaignCreated` includes the featured campaign’s create block
 
 ### Frontend (production host or `http://localhost:43147`)
+
+Local-only curls and a verified 2026-09-20 snapshot: [`LOCAL.md` smoke checklist](./LOCAL.md#smoke-checklist-prove-the-stack-works).
 
 | URL | Expect |
 |---|---|

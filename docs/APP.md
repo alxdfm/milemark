@@ -1,6 +1,6 @@
 # App (frontend)
 
-Canonical map of the Next.js client. Contract rules: [`ARCHITECTURE.md`](./ARCHITECTURE.md). Deploy, env, and Vercel: [`DEPLOY.md`](./DEPLOY.md). Judge kit: [`DEMO.md`](./DEMO.md).
+Canonical map of the Next.js client. Contract rules: [`ARCHITECTURE.md`](./ARCHITECTURE.md). Deploy, env, and Vercel: [`DEPLOY.md`](./DEPLOY.md). **Run locally against Sepolia:** [`LOCAL.md`](./LOCAL.md). Judge kit: [`DEMO.md`](./DEMO.md).
 
 Stack: **Next.js App Router** (`web/package.json` name `milemark-web`, Next `16.3.5`, React `19`, **wagmi** `3` / **viem** `2`), Tailwind v4, injected wallet only. Dev server: **`http://localhost:43147`** (`next dev --port 43147`).
 

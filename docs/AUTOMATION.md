@@ -1,6 +1,6 @@
 # Automation (Makefile + GitHub Actions)
 
-Canonical reference for how MileMark builds, deploys and releases itself. The manual, step-by-step deploy guide is [`DEPLOY.md`](./DEPLOY.md) — nothing here replaces it, because every automated step runs the same commands documented there.
+Canonical reference for how MileMark builds, deploys and releases itself. The manual, step-by-step deploy guide is [`DEPLOY.md`](./DEPLOY.md) — nothing here replaces it, because every automated step runs the same commands documented there. Day-to-day local UI + Sepolia: [`LOCAL.md`](./LOCAL.md) (`make web-dev`).
 
 Verified against this repo on **2026-09-20** with Foundry `1.8.3`, Node 24 locally / Node 20 in CI, Python 3.12.
 
