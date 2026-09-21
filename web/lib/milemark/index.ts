@@ -54,6 +54,8 @@ export {
   indexMilestones,
   isChallengeOpen,
   isMileClaimable,
+  isMileReclaimable,
+  reclaimableMiles,
   showDisputeControls,
   type IndexedMilestone,
 } from "./lifecycle";

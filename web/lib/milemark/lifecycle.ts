@@ -95,6 +95,21 @@ export function challengingMiles(
   );
 }
 
+/** Mirrors the contract's `_isReclaimable`: incomplete or disputed, not yet settled. */
+export function isMileReclaimable(
+  m: Pick<Milestone, "completed" | "claimed" | "reclaimed" | "disputed">,
+): boolean {
+  if (m.claimed || m.reclaimed) return false;
+  return !m.completed || m.disputed;
+}
+
+/** Miles the sponsor would recover once the deadline passes. */
+export function reclaimableMiles(list: readonly Milestone[]): IndexedMilestone[] {
+  return indexMilestones(list).filter(({ milestone }) =>
+    isMileReclaimable(milestone),
+  );
+}
+
 export function disputedMiles(list: readonly Milestone[]): IndexedMilestone[] {
   return indexMilestones(list).filter(
     ({ milestone }) => milestone.disputed && !milestone.claimed && !milestone.reclaimed,

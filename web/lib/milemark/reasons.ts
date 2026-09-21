@@ -6,10 +6,15 @@ export function claimReason(input: {
   claimable: bigint;
   challengingCount?: number;
   disputedCount?: number;
+  /** Relógio local já liberou o mile, mas o read do contrato ainda não voltou. */
+  syncing?: boolean;
 }): string | null {
   if (!input.connected) return "Connect the beneficiary wallet to claim.";
   if (!input.isBeneficiary) return "Only the beneficiary can claim.";
   if (input.claimable === 0n) {
+    if (input.syncing) {
+      return "Challenge window just closed — confirming the claimable amount onchain…";
+    }
     const challenging = input.challengingCount ?? 0;
     const disputed = input.disputedCount ?? 0;
     if (challenging > 0) {
@@ -33,12 +38,18 @@ export function reclaimReason(input: {
   reclaimable: bigint;
   deadline: bigint;
   nowMs?: number;
+  /** Deadline já venceu no relógio local, mas o read do contrato ainda não voltou. */
+  syncing?: boolean;
 }): string | null {
   if (!input.connected) return "Connect the sponsor wallet to reclaim.";
   if (!input.isSponsor) return "Only the sponsor can reclaim.";
   if (input.reclaimable === 0n) {
+    if (input.syncing) {
+      return "Deadline just passed — confirming the reclaimable amount onchain…";
+    }
     const now = input.nowMs ?? Date.now();
-    return Number(input.deadline) * 1000 > now
+    // O contrato reverte enquanto `block.timestamp <= deadline`, daí o `>=`.
+    return Number(input.deadline) * 1000 >= now
       ? "Deadline has not passed yet (or nothing is reclaimable)."
       : "Nothing left to reclaim on incomplete or disputed milestones.";
   }

@@ -1,6 +1,7 @@
 import {
   claimReason,
   claimableMiles,
+  claimableTotal,
   challengingMiles,
   disputedMiles,
   formatChallengeRemaining,
@@ -38,17 +39,23 @@ export function ClaimCard({
   const ready = claimableMiles(milestones, challengeWindow, nowSec);
   const waiting = challengingMiles(milestones, challengeWindow, nowSec);
   const disputed = disputedMiles(milestones);
+  // `ready` vem do relógio local; `claimable` vem do contrato. Entre o fim da
+  // janela e o próximo read os dois divergem — o total exibido segue a lista
+  // para nunca mostrar "0.00 USDC" embaixo de miles listados como prontos.
+  const readyTotal = claimableTotal(ready);
+  const syncing = ready.length > 0 && claimable === 0n;
   const reason = claimReason({
     connected,
     isBeneficiary,
     claimable,
     challengingCount: waiting.length,
     disputedCount: disputed.length,
+    syncing,
   });
   const count = ready.length;
   const claimLabel =
     count > 1
-      ? `Claim all (${count} miles) ${formatUsdc(claimable)} USDC`
+      ? `Claim all (${count} miles) ${formatUsdc(readyTotal)} USDC`
       : undefined;
 
   return (
@@ -76,7 +83,7 @@ export function ClaimCard({
             <li className="mt-1 flex justify-between gap-3 border-t border-line pt-2 text-xs uppercase tracking-wider text-muted">
               <span>Total this claim</span>
               <span className="font-mono text-foreground">
-                {formatUsdc(claimable)} USDC
+                {formatUsdc(readyTotal)} USDC
               </span>
             </li>
           </ul>

@@ -1,4 +1,8 @@
-import { reclaimReason } from "@/lib/milemark";
+import {
+  reclaimReason,
+  reclaimableMiles,
+  type Milestone,
+} from "@/lib/milemark";
 import {
   Card,
   CardContent,
@@ -14,6 +18,8 @@ export function ReclaimCard({
   deadline,
   connected,
   isSponsor,
+  milestones,
+  nowSec,
   onSettled,
 }: {
   campaignId: bigint;
@@ -21,13 +27,21 @@ export function ReclaimCard({
   deadline: bigint;
   connected: boolean;
   isSponsor: boolean;
+  milestones: readonly Milestone[];
+  nowSec: number;
   onSettled: () => void;
 }) {
+  // O contrato só libera reclaim em `block.timestamp > deadline`. O relógio
+  // local cruza essa linha antes do próximo read voltar com o valor novo.
+  const pending = reclaimableMiles(milestones);
+  const syncing =
+    BigInt(nowSec) > deadline && pending.length > 0 && reclaimable === 0n;
   const reason = reclaimReason({
     connected,
     isSponsor,
     reclaimable,
     deadline,
+    syncing,
   });
   return (
     <Card>

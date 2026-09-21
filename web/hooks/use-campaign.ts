@@ -23,6 +23,18 @@ import {
   type Milestone,
 } from "@/lib/milemark";
 
+/**
+ * Reads são a fonte de verdade, então a página faz polling em vez de congelar
+ * no load: sem isso a janela de challenge fecha no relógio local e `claimable`
+ * fica preso no valor antigo até um reload.
+ */
+const READ_REFETCH_MS = 5_000;
+
+/** Campanha inexistente reverte sempre — para de repolling nesse caso. */
+function readRefetchInterval(query: { state: { error: unknown } }) {
+  return isCampaignNotFound(query.state.error) ? false : READ_REFETCH_MS;
+}
+
 export type CampaignLoadStatus =
   | "unconfigured"
   | "invalid"
@@ -57,7 +69,11 @@ export function useCampaign(campaignId: string): UseCampaignResult {
     functionName: "getCampaign",
     args: id !== null ? [id] : undefined,
     chainId: milemarkChain.id,
-    query: { enabled: id !== null && isEscrowConfigured, retry: 1 },
+    query: {
+      enabled: id !== null && isEscrowConfigured,
+      retry: 1,
+      refetchInterval: readRefetchInterval,
+    },
   });
 
   const milestonesQuery = useReadContract({
@@ -66,7 +82,11 @@ export function useCampaign(campaignId: string): UseCampaignResult {
     functionName: "getMilestones",
     args: id !== null ? [id] : undefined,
     chainId: milemarkChain.id,
-    query: { enabled: id !== null && isEscrowConfigured, retry: 1 },
+    query: {
+      enabled: id !== null && isEscrowConfigured,
+      retry: 1,
+      refetchInterval: readRefetchInterval,
+    },
   });
 
   const attestorsQuery = useReadContract({
@@ -75,7 +95,11 @@ export function useCampaign(campaignId: string): UseCampaignResult {
     functionName: "getAttestors",
     args: id !== null ? [id] : undefined,
     chainId: milemarkChain.id,
-    query: { enabled: id !== null && isEscrowConfigured, retry: 1 },
+    query: {
+      enabled: id !== null && isEscrowConfigured,
+      retry: 1,
+      refetchInterval: readRefetchInterval,
+    },
   });
 
   const attestedQuery = useReadContract({
@@ -87,6 +111,7 @@ export function useCampaign(campaignId: string): UseCampaignResult {
     query: {
       enabled: id !== null && isEscrowConfigured && Boolean(address),
       retry: 1,
+      refetchInterval: readRefetchInterval,
     },
   });
 

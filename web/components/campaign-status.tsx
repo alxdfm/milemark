@@ -163,6 +163,8 @@ export function CampaignStatus({ campaignId }: { campaignId: string }) {
         deadline={view.deadline}
         connected={roles.connected}
         isSponsor={roles.isSponsor}
+        milestones={milestones}
+        nowSec={nowSec}
         onSettled={refetch}
       />
     </div>
