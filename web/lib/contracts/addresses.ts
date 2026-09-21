@@ -30,8 +30,10 @@ export const CIRCLE_USDC_ARB_SEPOLIA =
  * Default id `0` is the original 1-of-1 smoke (title "MM v3 Demo Quorum",
  * 3 USDC, 60s window). Create tx
  * 0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4 at block 309949346.
- * A 2-of-3 featured exhibit is minted with `script/CreateFeaturedDemo.s.sol`;
- * then set this env to the printed id and rebuild. Do not describe id 0 as 2-of-3.
+ * A hand-made 2-of-3 is already onchain at id `1` (10 USDC, 1h window, create tx
+ * 0x01dd9f1a5b824d2574d16f5627030481a399594a9415431abc6e04e5c71a22e5 at block
+ * 310231111) but is not wired here. Set this env to a real id and rebuild to
+ * feature it. Do not describe id 0 as 2-of-3.
  */
 export const DEMO_CAMPAIGN_ID = (
   process.env.NEXT_PUBLIC_DEMO_CAMPAIGN_ID ?? "0"

@@ -107,7 +107,7 @@ function FeaturedFacts() {
   let shape: string;
   if (!view) {
     shape = isSmoke
-      ? "Original 1-of-1 smoke campaign (not 2-of-3 until CreateFeaturedDemo is broadcast and NEXT_PUBLIC_DEMO_CAMPAIGN_ID is updated)."
+      ? "Original 1-of-1 smoke campaign. The live 2-of-3 is campaign id 1, which NEXT_PUBLIC_DEMO_CAMPAIGN_ID does not point at."
       : `Featured id ${DEMO_CAMPAIGN_ID} — waiting on chain read.`;
   } else if (view.quorum === 1 && attestors.length <= 1) {
     shape = "This is the original 1-of-1 smoke exhibit, not a 2-of-3.";
@@ -143,9 +143,14 @@ function FeaturedFacts() {
         </p>
       ) : (
         <p className="mt-2">
-          For a live 2-of-3 walkthrough, use Create → Judge demo, or the operator
-          runs <code className="font-mono text-xs">CreateFeaturedDemo.s.sol</code>{" "}
-          and sets <code className="font-mono text-xs">NEXT_PUBLIC_DEMO_CAMPAIGN_ID</code>.
+          A live 2-of-3 is already onchain at{" "}
+          <Link className="text-accent hover:underline" href="/campaign/1">
+            id 1
+          </Link>{" "}
+          (quorum 2 of 3, 1h window, 10 USDC). It is not the featured id — point{" "}
+          <code className="font-mono text-xs">NEXT_PUBLIC_DEMO_CAMPAIGN_ID</code>{" "}
+          at it to feature it here. For a 2-of-3 you control, use Create → Judge
+          demo.
         </p>
       )}
     </div>
