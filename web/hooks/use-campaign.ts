@@ -15,6 +15,7 @@ import {
   parseCampaignView,
   parseFlags,
   parseMilestones,
+  isCampaignNotFound,
   resolveRoles,
   type CampaignRoles,
   type CampaignTotals,
@@ -133,9 +134,16 @@ export function useCampaign(campaignId: string): UseCampaignResult {
 
   const totals = useMemo(() => campaignTotals(milestones), [milestones]);
 
+  // `getCampaign` reverte CampaignNotFound para um id inexistente, o que chega
+  // aqui como isError — sem esta checagem o status nunca vira "not-found".
+  const notFound =
+    isCampaignNotFound(campaign.error) ||
+    isCampaignNotFound(milestonesQuery.error);
+
   let status: CampaignLoadStatus;
   if (!isEscrowConfigured) status = "unconfigured";
   else if (id === null) status = "invalid";
+  else if (notFound) status = "not-found";
   else if (campaign.isError || milestonesQuery.isError) status = "error";
   else if (campaign.isPending || milestonesQuery.isPending) status = "loading";
   else if (!view) status = "not-found";

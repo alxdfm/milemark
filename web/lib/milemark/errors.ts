@@ -37,6 +37,21 @@ export function extractErrorMessage(err: unknown): string {
   return String(err);
 }
 
+/**
+ * True when a read reverted with the contract's `CampaignNotFound`.
+ * viem aninha o erro decodificado alguns níveis abaixo, daí o walk na cadeia
+ * de `cause` antes do fallback por mensagem.
+ */
+export function isCampaignNotFound(err: unknown): boolean {
+  let cursor: unknown = err;
+  for (let depth = 0; cursor && depth < 6; depth++) {
+    const node = cursor as { data?: { errorName?: string }; cause?: unknown };
+    if (node.data?.errorName === "CampaignNotFound") return true;
+    cursor = node.cause;
+  }
+  return extractErrorMessage(err).includes("CampaignNotFound");
+}
+
 export function friendlyError(err: unknown): string {
   const raw = extractErrorMessage(err);
   for (const [needle, message] of TABLE) {

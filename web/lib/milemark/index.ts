@@ -57,4 +57,8 @@ export {
   showDisputeControls,
   type IndexedMilestone,
 } from "./lifecycle";
-export { extractErrorMessage, friendlyError } from "./errors";
+export {
+  extractErrorMessage,
+  friendlyError,
+  isCampaignNotFound,
+} from "./errors";
