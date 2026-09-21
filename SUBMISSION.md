@@ -18,8 +18,10 @@ A sponsor locks Circle testnet USDC into a titled campaign with ordered mileston
 | Production UI | https://milemark-pearl.vercel.app |
 | Demo kit | https://milemark-pearl.vercel.app/demo |
 | Create | https://milemark-pearl.vercel.app/create |
-| Featured campaign | https://milemark-pearl.vercel.app/campaign/0 — **currently the original 1-of-1 smoke** (see below) |
+| Featured campaign | https://milemark-pearl.vercel.app/campaign/0 — **the original 1-of-1 smoke** (see below) |
 | Historical smoke | id `0` · 1-of-1 · 60s window · 3 USDC · title `MM v3 Demo Quorum` |
+| Live 2-of-3 | id `1` · `MileMark Featured 2-of-3` · quorum 2 of 3 · 1h window · 10 USDC · **not** the featured id |
+| `campaignCount` | `2` (verified onchain 2026-09-21) |
 | MilestoneEscrow **v3** | [`0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC`](https://sepolia.arbiscan.io/address/0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC) |
 | Deploy tx | [`0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464`](https://sepolia.arbiscan.io/tx/0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464) |
 | Deployer | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4` |
@@ -28,7 +30,7 @@ A sponsor locks Circle testnet USDC into a titled campaign with ordered mileston
 | Frozen v2 (do not wire) | `0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207` |
 | Obsolete v1 | `0x72b474DB34268281CD10db655cc1517C33973049` |
 
-**Featured 2-of-3:** live `campaignCount` is still `1` (only id `0`). Minting a judge-facing 2-of-3 requires a **funded Sepolia key**. Operator: `contracts/script/CreateFeaturedDemo.s.sol` (needs `ATTESTOR_2` + `ATTESTOR_3`, ≥ 10 USDC), then set `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` to the printed id and rebuild. Until then `/demo` describes id `0` as the original 1-of-1 smoke — it does **not** claim that campaign is 2-of-3. Judges can still run a live 2-of-3 from **Create → Judge demo (2-of-3, 60s)**.
+**Featured 2-of-3:** live `campaignCount` is `2`. A 2-of-3 campaign **is** onchain at id `1` — title `MileMark Featured 2-of-3`, quorum 2 of 3 attestors, 1h window, 3+4+3 = 10 USDC, created 2026-09-18 15:40 UTC (block `310231111`, tx [`0x01dd9f1a…`](https://sepolia.arbiscan.io/tx/0x01dd9f1a5b824d2574d16f5627030481a399594a9415431abc6e04e5c71a22e5)), deadline **2026-09-25 15:40 UTC**. It was made by hand, **not** by `contracts/script/CreateFeaturedDemo.s.sol` — that script hardcodes a different title, brief and milestone descriptions, and a 30-day deadline. `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` is still `0`, so `/demo` describes the 1-of-1 smoke and does **not** claim that campaign is 2-of-3. No mile on either campaign has been attested yet. Judges can also run their own 2-of-3 from **Create → Judge demo (2-of-3, 60s)**.
 
 ## Demo path (≈ 3 minutes)
 

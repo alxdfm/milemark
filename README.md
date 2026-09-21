@@ -12,13 +12,14 @@ Sponsors lock USDC into a titled campaign with ordered milestones (completion is
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Product, roles, lifecycle (mermaid), contract API/storage/events/errors/invariants, trust model |
 | [`docs/APP.md`](docs/APP.md) | Routes, components, hooks, `lib/milemark`, how the UI derives roles and disabled buttons |
-| [`docs/DEMO.md`](docs/DEMO.md) | Judge script, live campaign `0` (1-of-1 smoke), featured id env, 2-of-3 mint |
+| [`docs/DEMO.md`](docs/DEMO.md) | Judge script, live campaigns `0` (1-of-1 smoke) and `1` (2-of-3, not wired), featured id env |
 | [`docs/LOCAL.md`](docs/LOCAL.md) | **Local runbook**: UI on `:43147` + live Arbitrum Sepolia v3, env, smoke curls, wallet, troubleshooting |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | **Canonical deploy guide**: prerequisites, Foundry, fromBlock, Vercel Root Directory (`web/`), env matrix, smoke checks, failure modes |
 | [`docs/AUTOMATION.md`](docs/AUTOMATION.md) | Makefile targets, the two GitHub Actions workflows, required secrets, release flow, rollback |
 | [`docs/AUDIT-DEPLOY.md`](docs/AUDIT-DEPLOY.md) | Deploy-doc audit: gaps found → fixes (2026-09-18) |
 | [`artifacts/v3-web-deploy/WEB_DEPLOY.md`](artifacts/v3-web-deploy/WEB_DEPLOY.md) | Production tarball / Vercel rebuild notes |
 | [`docs/AUDIT.md`](docs/AUDIT.md) | Product/docs incongruence log (2026-09-17) |
+| [`docs/AUDIT-CHAIN.md`](docs/AUDIT-CHAIN.md) | Onchain reconciliation: campaign `1`, stale `campaignCount` → fixes (2026-09-21) |
 | [`SUBMISSION.md`](SUBMISSION.md) | HackQuest one-pager (do not submit from this repo) |
 
 ## Live (current = v3 only)
@@ -32,7 +33,9 @@ Sponsors lock USDC into a titled campaign with ordered milestones (completion is
 | Deployer | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4` |
 | USDC (Circle testnet) | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
 | Demo kit | https://milemark-pearl.vercel.app/demo |
-| Demo campaign (featured) | id `0` until `CreateFeaturedDemo` is broadcast · currently **1-of-1 smoke** · 60s window · 3 USDC · create tx [`0x9eb5776f…`](https://sepolia.arbiscan.io/tx/0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4) |
+| `campaignCount` | `2` — ids `0` and `1` (verified onchain 2026-09-21) |
+| Demo campaign (featured in the UI) | id `0` · **1-of-1 smoke** · 60s window · 3 USDC · create tx [`0x9eb5776f…`](https://sepolia.arbiscan.io/tx/0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4) |
+| Live 2-of-3 exhibit (**not** wired) | id `1` · `MileMark Featured 2-of-3` · quorum 2 of 3 · 1h window · 10 USDC · deadline **2026-09-25 15:40 UTC** · create tx [`0x01dd9f1a…`](https://sepolia.arbiscan.io/tx/0x01dd9f1a5b824d2574d16f5627030481a399594a9415431abc6e04e5c71a22e5) |
 | Event fromBlock | `309949200` (deploy block `309949272`; campaign 0 create block `309949346`) |
 | Frozen v2 (do not wire) | [`0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207`](https://sepolia.arbiscan.io/address/0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207) |
 | Obsolete v1 (do not use) | `0x72b474DB34268281CD10db655cc1517C33973049` |

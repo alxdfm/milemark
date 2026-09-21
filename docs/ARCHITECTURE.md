@@ -29,7 +29,7 @@ v3 **is not an upgrade** of those addresses. It is a new immutable deploy.
 
 **Problem.** Builder grants, hackathon prizes, and small retainers still settle on trust or a human escrow agent. A missed mile either blocks the next payment or dumps the whole purse.
 
-**Who it is for.** A **sponsor** who will lock USDC, a **beneficiary** who delivers work, and one or more **attestors** who vote that a mile is done. Roles may overlap (live campaign `0` is 1-of-1 with the same address in all three seats — the original smoke exhibit, not the 2-of-3 featured mint).
+**Who it is for.** A **sponsor** who will lock USDC, a **beneficiary** who delivers work, and one or more **attestors** who vote that a mile is done. Roles may overlap (live campaign `0` is 1-of-1 with the same address in all three seats — the original smoke exhibit; the live 2-of-3 exhibit is campaign `1`).
 
 **Why onchain.** The split, the quorum, the challenge window, and the deadline reclaim are contract rules, not a spreadsheet. Anyone can verify balances and events on Arbiscan. The UI cannot invent a campaign that the contract does not store.
 

@@ -15,6 +15,7 @@ Verified end-to-end on **2026-09-20** (Foundry `cast` + `npm run dev` on port `4
 | MilestoneEscrow **v3** | Arbitrum Sepolia (`421614`) | `0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC` |
 | Circle testnet USDC | Arbitrum Sepolia | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
 | Featured demo campaign | onchain id `0` | title `MM v3 Demo Quorum` (1-of-1 smoke) |
+| Live 2-of-3 campaign | onchain id `1` | title `MileMark Featured 2-of-3` (not the featured id) |
 | Next.js UI | your laptop | `http://localhost:43147` |
 | JSON-RPC proxy | Next route `POST /rpc` | forwards to `NEXT_PUBLIC_RPC` |
 
@@ -91,7 +92,7 @@ NEXT_PUBLIC_USDC_ADDRESS=0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d
 | `NEXT_PUBLIC_ESCROW_ADDRESS` | live v3 above |
 | `NEXT_PUBLIC_USDC_ADDRESS` | `escrow.usdc()` (Circle address above) |
 | `NEXT_PUBLIC_ESCROW_FROM_BLOCK` | `309949200` (≤ deploy block `309949272` and campaign-0 create `309949346`) |
-| `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` | a real id on that escrow (`0` until Featured is minted) |
+| `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` | a real id on that escrow (`0` = smoke, `1` = the unwired 2-of-3) |
 | `NEXT_PUBLIC_RPC` | a working Arbitrum Sepolia JSON-RPC |
 
 **Resolution** (later wins): hardcoded fallbacks in `web/lib/contracts/addresses.ts` / `web/lib/chains.ts` ← `web/.env.production` ← `web/.env.local`.

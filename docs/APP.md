@@ -13,10 +13,11 @@ Source of truth for campaign state is **onchain**. No database, no subgraph.
 | Origin | https://milemark-pearl.vercel.app |
 | Demo kit | https://milemark-pearl.vercel.app/demo |
 | Create | https://milemark-pearl.vercel.app/create |
-| Featured campaign | https://milemark-pearl.vercel.app/campaign/0 |
+| Featured campaign | https://milemark-pearl.vercel.app/campaign/0 (`NEXT_PUBLIC_DEMO_CAMPAIGN_ID`) |
+| Live 2-of-3 campaign | https://milemark-pearl.vercel.app/campaign/1 (onchain, **not** the featured id) |
 | RPC proxy | `POST https://milemark-pearl.vercel.app/rpc` (GET is 405) |
 
-Verified 2026-09-17: `/demo` returns 200; proxy `eth_call campaignCount()` returns `1` against v3.
+Verified 2026-09-21: `/`, `/demo` and `/create` return 200; `eth_call campaignCount()` returns `2` against v3 (ids `0` and `1`).
 
 ## Routes
 
@@ -167,8 +168,9 @@ Do not confuse these:
 
 1. **Live id `0`** on v3 — 1-of-1, 60s window, 3 USDC, title `MM v3 Demo Quorum`. Same deployer wallet is sponsor, beneficiary, and the only attestor. See [`DEMO.md`](./DEMO.md). Keep this labeled as the original smoke campaign.
 2. **Create-form “Judge demo (2-of-3, 60s)”** — a *new* campaign the judge funds with three attestor addresses.
-3. **`script/CreateDemo.s.sol`** — Foundry 1-of-1 helper; defaults 4+6 USDC and title `MileMark v3 demo`. Running it **now** would create id `1`, not rewrite id `0`.
-4. **`script/CreateFeaturedDemo.s.sol`** — Foundry 2-of-3 featured mint (1h window, 3+4+3 USDC). Operator broadcasts, then sets `NEXT_PUBLIC_DEMO_CAMPAIGN_ID`.
+3. **`script/CreateDemo.s.sol`** — Foundry 1-of-1 helper; defaults 4+6 USDC and title `MileMark v3 demo`. Running it **now** would create id `2`, not rewrite an existing id.
+4. **`script/CreateFeaturedDemo.s.sol`** — Foundry 2-of-3 featured mint (1h window, 3+4+3 USDC). Operator broadcasts, then sets `NEXT_PUBLIC_DEMO_CAMPAIGN_ID`. It has **not** been broadcast against live v3.
+5. **Live id `1`** on v3 — a hand-made 2-of-3 (quorum 2 of 3, 1h window, 10 USDC, title `MileMark Featured 2-of-3`). Same shape as the script above but **not** its output. `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` does not point here. See [`DEMO.md`](./DEMO.md).
 
 ## Config the UI reads
 

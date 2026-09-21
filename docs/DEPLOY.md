@@ -21,7 +21,7 @@ v3 is **already live** at `0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC`. Broadcas
 | Deployer | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4` |
 | Deploy block | `309949272` |
 | UI `fromBlock` (canonical) | `309949200` |
-| Demo campaign | id `0` (1-of-1 **smoke**, **not** the 2-of-3 create template). Featured 2-of-3: run `CreateFeaturedDemo.s.sol` then set `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` |
+| Demo campaign | id `0` (1-of-1 **smoke**, **not** the 2-of-3 create template). A hand-made 2-of-3 sits at id `1`, not wired. Next mint is id `2` |
 | Demo create tx | `0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4` |
 | Demo create block | `309949346` |
 | USDC (Circle testnet) | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
@@ -120,7 +120,7 @@ There are **no** server-only secrets. `POST /rpc` uses the same `NEXT_PUBLIC_RPC
 
 `CreateDemo.s.sol` **hardcodes** amounts `4e6 + 6e6` (10 USDC), title `MileMark v3 demo`, 60s window. That is **not** live campaign `0` and **not** the 2-of-3 featured exhibit.
 
-`CreateFeaturedDemo.s.sol` **hardcodes** 3+4+3 USDC, title `MileMark featured 2-of-3`, quorum 2, 1 hour window, 30 day deadline. It requires three unique attestors (`ATTESTOR` defaults to sponsor; `ATTESTOR_2` and `ATTESTOR_3` are required). Sponsor must hold **≥ 10 USDC**. After broadcast, set `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` to the printed id and rebuild. Id `0` stays the historical 1-of-1 smoke.
+`CreateFeaturedDemo.s.sol` **hardcodes** 3+4+3 USDC, title `MileMark featured 2-of-3`, quorum 2, 1 hour window, 30 day deadline. It requires three unique attestors (`ATTESTOR` defaults to sponsor; `ATTESTOR_2` and `ATTESTOR_3` are required). Sponsor must hold **≥ 10 USDC**. After broadcast, set `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` to the printed id and rebuild. Id `0` stays the historical 1-of-1 smoke. This script has **not** been broadcast against live v3 — the 2-of-3 at id `1` was made by hand and carries a different title, brief and milestone descriptions.
 
 ### Frontend (`NEXT_PUBLIC_*`)
 
@@ -132,7 +132,7 @@ All public (inlined into the client bundle). Same names for local, Sepolia, and 
 | `NEXT_PUBLIC_CHAIN_ID` | `421614` = Arbitrum Sepolia. `31337` selects the Anvil chain object and skips the `/rpc` proxy | `421614` | `31337` | Optional on Sepolia (fallback `421614`). **Set `31337`** for Anvil |
 | `NEXT_PUBLIC_ESCROW_ADDRESS` | MilestoneEscrow **v3**. v1/v2 addresses make `isEscrowConfigured` false | `0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC` | address printed by `Deploy.s.sol` | Optional on Sepolia (fallback `LIVE_ESCROW_V3`). **Set** after a new deploy / Anvil |
 | `NEXT_PUBLIC_USDC_ADDRESS` | Token the **create form** approves. Must equal `escrow.usdc()` | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` | `MockERC20` address | Optional on Sepolia (fallback Circle USDC). **Set** for Anvil |
-| `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` | Featured id for `/`, `/demo` “Open live campaign” | `0` (1-of-1 smoke until Featured is minted) | `0` after first local `CreateDemo` | Optional (fallback `"0"`). **Set** after `CreateFeaturedDemo` |
+| `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` | Featured id for `/`, `/demo` “Open live campaign” | `0` (1-of-1 smoke; the 2-of-3 at id `1` is not wired) | `0` after first local `CreateDemo` | Optional (fallback `"0"`). **Set** after a featured mint |
 | `NEXT_PUBLIC_ESCROW_FROM_BLOCK` | `getLogs` start for the activity timeline | `309949200` | `0` is OK on Anvil | Optional on current v3 (fallback `309949200`). **Set** after a **new** escrow deploy |
 
 No other `process.env` keys exist in `web/` besides these six.
@@ -227,7 +227,7 @@ If `usdc()` is not Circle USDC on Sepolia, the UI will approve the wrong token (
 
 ### Live id `0` (already onchain)
 
-Featured production campaign is **id `0`**: 1-of-1, 60s window, 3 USDC, title `MM v3 Demo Quorum`. It was **not** created by `CreateDemo.s.sol` or `CreateFeaturedDemo.s.sol`. Running either script against live v3 mints the **next** id (`campaignCount` read `2` on 2026-09-20, so the next mint is id `2` — confirm with `make check-live`). Do not describe id `0` as 2-of-3.
+Featured production campaign is **id `0`**: 1-of-1, 60s window, 3 USDC, title `MM v3 Demo Quorum`. It was **not** created by `CreateDemo.s.sol` or `CreateFeaturedDemo.s.sol`. Id `1` is a hand-made 2-of-3 (10 USDC, 1h window, deadline 2026-09-25 15:40 UTC) that is **not** wired as the featured id and was **not** produced by `CreateFeaturedDemo.s.sol` either. Running either script against live v3 mints the **next** id (`campaignCount` read `2` on 2026-09-21, so the next mint is id `2` — confirm with `make check-live`). Do not describe id `0` as 2-of-3.
 
 Verify id `0`:
 

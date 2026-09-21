@@ -8,10 +8,12 @@ Walkthrough for the live **v3** escrow on Arbitrum Sepolia. Local UI pointing at
 | Local app | http://localhost:43147 (see [`LOCAL.md`](./LOCAL.md)) |
 | Demo kit | https://milemark-pearl.vercel.app/demo |
 | Create | https://milemark-pearl.vercel.app/create |
-| Featured campaign | https://milemark-pearl.vercel.app/campaign/0 (`NEXT_PUBLIC_DEMO_CAMPAIGN_ID`, currently **1-of-1 smoke**) |
+| Featured campaign | https://milemark-pearl.vercel.app/campaign/0 (`NEXT_PUBLIC_DEMO_CAMPAIGN_ID`, the **1-of-1 smoke**) |
+| Live 2-of-3 campaign | https://milemark-pearl.vercel.app/campaign/1 (onchain, **not** the featured id) |
 | Escrow v3 | [`0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC`](https://sepolia.arbiscan.io/address/0xC5A623f9204D3768DDce4aA34137b1eF75D7ADCC) |
 | Deploy tx | [`0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464`](https://sepolia.arbiscan.io/tx/0xf78262e4818c087d472c12ab7c9f3b02c316ef879bcb93ef8e9992692410e464) |
 | Campaign 0 create tx | [`0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4`](https://sepolia.arbiscan.io/tx/0x9eb5776fabb0519e52df8171bf59077898db7124596032b797aced5fef62b4e4) (block `309949346`) |
+| Campaign 1 create tx | [`0x01dd9f1a5b824d2574d16f5627030481a399594a9415431abc6e04e5c71a22e5`](https://sepolia.arbiscan.io/tx/0x01dd9f1a5b824d2574d16f5627030481a399594a9415431abc6e04e5c71a22e5) (block `310231111`) |
 | USDC | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` ([Circle faucet](https://faucet.circle.com/)) |
 | Frozen v2 (do not wire) | `0xdECB21Fd8e835490E5B9Fc26469cE4Cca1F94207` |
 | Obsolete v1 | `0x72b474DB34268281CD10db655cc1517C33973049` |
@@ -20,7 +22,7 @@ No recorded demo video is in this repository. The in-app kit **is** the script.
 
 ## What is already onchain (campaign `0`)
 
-Verified by `getCampaign(0)` / `getMilestones` / `getAttestors` (2026-09-17):
+Verified by `getCampaign(0)` / `getMilestones` / `getAttestors` (2026-09-17, re-read 2026-09-21 — unchanged):
 
 | Field | Live value |
 |---|---|
@@ -33,13 +35,35 @@ Verified by `getCampaign(0)` / `getMilestones` / `getAttestors` (2026-09-17):
 | Total locked | 3 USDC |
 | Deadline | ~2026-10-01 20:07 UTC |
 
-This is **not** the create-form “Judge demo (2-of-3, 60s)” template, **not** `CreateDemo.s.sol` defaults, and **not** `CreateFeaturedDemo.s.sol`. Keep labeling id `0` as the original 1-of-1 smoke even after a featured 2-of-3 is minted.
+This is **not** the create-form “Judge demo (2-of-3, 60s)” template, **not** `CreateDemo.s.sol` defaults, and **not** `CreateFeaturedDemo.s.sol`. Keep labeling id `0` as the original 1-of-1 smoke. The same caution applies to id `1` below — it has the featured *shape* but is not the script's output.
 
-At audit time neither mile was completed. State may change if someone attests/claims/reclaims — read the campaign page, not this table, for live flags.
+Neither mile has been attested (2026-09-21: both `attestationCount 0`, `completed false`). State may change if someone attests/claims/reclaims — read the campaign page, not this table, for live flags.
 
-## Featured 2-of-3 (operator)
+## The live 2-of-3 (campaign `1`)
 
-Live `campaignCount` is `1` as of this writing. Minting a 2-of-3 featured exhibit needs a funded Sepolia key (this repo does not ship one).
+Verified onchain 2026-09-21: `campaignCount()` is `2`. Campaign `1` is a real 2-of-3.
+
+| Field | Live value |
+|---|---|
+| Title | `MileMark Featured 2-of-3` |
+| Brief | `ipfs://milemark-featured-demo-brief` |
+| Sponsor / beneficiary | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4` (same address) |
+| Attestors | `0x3A17eD984f20C50C6927addDAEf633fff40f84D4`, `0x7B1b9D96683c2BB1d1132078f6053562025E1438`, `0xc913aDAaaf0AC6dfFd21817a0BfDD22EB6e7a0dC` |
+| Quorum | 2 of 3 |
+| Challenge window | `3600` s (1 hour) |
+| Miles | (0) `Milestone 1: Scope agreed` **3 USDC**; (1) `Milestone 2: Delivery submitted` **4 USDC**; (2) `Milestone 3: Acceptance` **3 USDC** |
+| Total locked | 10 USDC |
+| Created | 2026-09-18 15:40 UTC · block `310231111` |
+| Deadline | **2026-09-25 15:40 UTC** |
+| Attestations | none — every mile is `attestationCount 0`, `completed false` |
+
+It was **not** created by `CreateFeaturedDemo.s.sol`. That script hardcodes title `MileMark featured 2-of-3` (lowercase `f`), brief `https://github.com/alxdfm/milemark`, descriptions `Public demo live on Sepolia` / `Two attestors reach quorum` / `Claim after the challenge window`, and a 30-day deadline. Campaign `1` matches none of those (its deadline is 7 days out). Treat it as a hand-made exhibit of the same shape.
+
+`NEXT_PUBLIC_DEMO_CAMPAIGN_ID` is still `0`, so `/` and `/demo` feature the smoke, not this campaign. To feature it, set the env to `1` (Vercel + `web/.env.production`) and **rebuild** — check the deadline first.
+
+### Minting a fresh featured campaign (operator)
+
+Needs a funded Sepolia key (this repo does not ship one). On live v3 the next id is `2`.
 
 ```bash
 cd contracts
@@ -51,7 +75,7 @@ forge script script/CreateFeaturedDemo.s.sol \
   --broadcast --chain 421614
 ```
 
-Then set `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` to the printed id (Vercel + `web/.env.production`) and **rebuild**. `/demo` reads the featured campaign onchain and will describe it as 2-of-3 only when quorum and attestor count match. Until then, Path B below is how judges run a live 2-of-3.
+Then set `NEXT_PUBLIC_DEMO_CAMPAIGN_ID` to the printed id (Vercel + `web/.env.production`) and **rebuild**. `/demo` reads the featured campaign onchain and will describe it as 2-of-3 only when quorum and attestor count match. Path B below is how a judge runs a 2-of-3 they control.
 
 ## Wallet roles cheat-sheet
 
