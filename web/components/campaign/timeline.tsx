@@ -98,7 +98,9 @@ export function CampaignTimeline({
             logIndex: log.logIndex ?? 0,
             txHash: log.transactionHash,
             title: `Milestone ${(log.args.index ?? 0n) + 1n} attested`,
-            detail: `${shortAddress(String(log.args.attestor ?? ""))} · ${log.args.attestationCount ?? 0}/${log.args.quorum ?? 0}${ev ? ` · ${ev}` : ""}`,
+            // O evento carrega a URI que o atestador enviou; o contrato guarda
+            // apenas a primeira não vazia. Rotulado para não confundir as duas.
+            detail: `${shortAddress(String(log.args.attestor ?? ""))} · ${log.args.attestationCount ?? 0}/${log.args.quorum ?? 0}${ev ? ` · submitted ${ev}` : ""}`,
           });
         }
         for (const log of completed) {
@@ -109,7 +111,7 @@ export function CampaignTimeline({
             logIndex: log.logIndex ?? 0,
             txHash: log.transactionHash,
             title: `Milestone ${(log.args.index ?? 0n) + 1n} completed (quorum)`,
-            detail: `${shortAddress(String(log.args.attestor ?? ""))}${ev ? ` · ${ev}` : ""}`.trim(),
+            detail: `${shortAddress(String(log.args.attestor ?? ""))}${ev ? ` · stored ${ev}` : ""}`.trim(),
           });
         }
         for (const log of disputed) {
