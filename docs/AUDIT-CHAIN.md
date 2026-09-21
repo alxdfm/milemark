@@ -59,6 +59,24 @@ Amounts (3+4+3), quorum (2) and window (3600) do match, which is exactly why thi
 - **`NEXT_PUBLIC_DEMO_CAMPAIGN_ID` stays `0`.** Pointing it at `1` is a product call, and campaign `1`'s deadline is **2026-09-25 15:40 UTC**. Wiring a campaign that expires days later would put an expired exhibit on the landing page.
 - **No new campaign was minted.** That needs a funded Sepolia key, which this repo does not ship.
 
+## Program audit (same pass)
+
+The docs pass above was documentation only. A second pass read `contracts/src/MilestoneEscrow.sol` end to end and the whole `web/` domain + component layer against it.
+
+**Equivalent, no change needed:** `_isClaimable` vs `isMileClaimable`; the dispute-window boundary (`>=` revert in the contract, `<` open in `lifecycle.ts`); attestor dedupe and `1 <= quorum <= unique` in `create.ts:88-104` vs `_setAttestors`. `ClaimButton` already guards `amount === 0n`. The timeline's `args: { campaignId }` filter is valid — all six events index `campaignId`. A 1.4 M-block `getLogs` with no `toBlock` still answers in ~230 ms on the public RPC.
+
+**Fixed:**
+
+| Severity | Where | Defect |
+|---|---|---|
+| High | `web/components/providers.tsx:14-15`, `web/hooks/use-campaign.ts` | No automatic refetch anywhere (`refetchOnWindowFocus: false`, no interval, no `watch`), so contract reads froze at page load while the countdown kept ticking. When a challenge window closed on screen, `ClaimCard` listed the mile as ready, showed **0.00 USDC** as the total, disabled the button and said “Nothing to claim yet”. Only a reload recovered. Same root cause left `Reclaim` dead after the deadline passed on screen, with `reasons.ts` asserting “Nothing left to reclaim”. Fix: 5 s polling + a `syncing` state + the claim total derived from the listed miles. |
+| Medium | `web/hooks/use-campaign.ts:139-141` | `campaign.isError` was tested before `!view`, and `getCampaign` reverts `CampaignNotFound` for a missing id — so `status` never reached `"not-found"` and the “Campaign not found → Create a campaign” card in `campaign-status.tsx:88` was unreachable. Fix: `isCampaignNotFound()` in `web/lib/milemark/errors.ts`, checked first. |
+| Low | `web/components/campaign/timeline.tsx:94` | `MilestoneAttested` carries the **caller's** `evidenceURI`, but the contract stores only the first non-empty one (`MilestoneEscrow.sol:306`) and `MilestoneCompleted` emits the stored one (`:317`). Two attestors with different URIs produced a timeline that showed both as equals. Fix: rows now read `submitted …` vs `stored …`. |
+| Low | `web/lib/milemark/reasons.ts:41` | Used `deadline * 1000 > now`; the contract reverts while `block.timestamp <= deadline` (`MilestoneEscrow.sol:368`). Disagreed on the exact deadline second. Fix: `>=`. |
+| Low | `web/components/campaign/milestone-list.tsx:149` | `showAttestorHint` repeated `!completed && !reclaimed`, already guaranteed by the enclosing branch. |
+
+**Known and deliberately not changed:** `dispute` does not check `milestone.claimed` (`MilestoneEscrow.sol:333-341`) while `lifecycle.ts:21` does. It is unreachable — claim requires the window closed, dispute requires it open — and carries no fund impact. Recorded here rather than in the `.sol`: **editing the Solidity source, even a comment, changes the metadata hash appended to the bytecode and would break the byte-for-byte match with the deployed contract** verified at the top of this document.
+
 ## Open items
 
 1. Campaign `1` expires **2026-09-25 15:40 UTC**. `attestMilestone` has no deadline guard, so it stays attestable, but the UI will render it expired and the sponsor can `reclaim`. A featured exhibit that outlives judging needs a fresh mint (next id `2`).

@@ -149,6 +149,10 @@ Logs are merged, sorted by `(blockNumber, logIndex)`, and linked to Arbiscan. If
 
 **Hooks:** `use-campaign.ts`, `use-now-sec.ts` (1s tick for countdowns), `use-config-warnings.ts`.
 
+`use-campaign.ts` polls the four reads every **5 s** (`READ_REFETCH_MS`) and stops polling once a read reverts `CampaignNotFound`. The poll exists because `claimable` / `reclaimable` are computed by the contract against `block.timestamp`, while the countdowns run off the browser clock: without it the challenge window closes on screen and the claim total stays frozen at the pre-window value until a reload. `providers.tsx` keeps `refetchOnWindowFocus: false`, so this interval is the only automatic refresh.
+
+While the local clock says a mile is claimable (or the deadline has passed) but the contract read has not caught up, `ClaimCard` / `ReclaimCard` render a **syncing** notice instead of “nothing to claim”. The displayed claim total is derived from the listed miles (`claimableTotal`), so the list and its total can never disagree; the button amount stays the contract value, so no transaction is offered that the chain would revert.
+
 ## Templates (create form only)
 
 Single source: `web/lib/templates.ts`. Each preset fills attestors slots, quorum, challenge window, deadline, and USDC miles (v3 `createCampaign` fields).
