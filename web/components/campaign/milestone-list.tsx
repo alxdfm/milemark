@@ -146,9 +146,7 @@ export function MilestoneList({
                     attestationCount={milestone.attestationCount}
                     disabled={attestDisabled}
                     alreadyAttested={alreadyAttested}
-                    showAttestorHint={
-                      !isAttestor && !milestone.completed && !milestone.reclaimed
-                    }
+                    showAttestorHint={!isAttestor}
                     onSettled={onSettled}
                   />
                 ) : null}
